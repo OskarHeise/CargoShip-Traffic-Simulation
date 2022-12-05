@@ -47,11 +47,15 @@ struct struct_merce{
     int tempo_vita_merce; /*genero la durata di vita delle merci*/
 };
 
-struct memoria_condivisa{
-    struct struct_merce merce[NO_MERCI];
-    int contatore_processi;
+struct struct_nave{
+    int velocita_nave; /*velocità nave*/
+    double *posizione_nave; /*posizione della nave con coordinate*/
+    int capacita_nave; /*capacità della nave*/
 };
-struct memoria_condivisa * sh_merce;
+
+struct struct_porto{
+    double *posizione_porto;
+};
 
 
 
@@ -195,11 +199,24 @@ double spostamento_nave(int velocita_nave, double *posizione_nave, double *posiz
     return risultato;
 }
 
-double *generatore_posizione_iniziale_porto(){
+double *generatore_posizione_iniziale_porto(pid_t pid){
     double *coordinate_generate;
     coordinate_generate = malloc(16);
-    coordinate_generate[0] = rand()%(SO_LATO - 0 + 1) + 0;
-    coordinate_generate[1] = rand()%(SO_LATO - 0 + 1) + 0;
+
+    if(pid % NO_PORTI == 0){
+        coordinate_generate[0] = 0;
+        coordinate_generate[1] = 0;
+    }else if(pid % NO_PORTI == 1){
+        coordinate_generate[0] = SO_LATO;
+        coordinate_generate[1] = 0;
+    }else if(pid % NO_PORTI == 2){
+        coordinate_generate[0] = SO_LATO;
+        coordinate_generate[1] = SO_LATO;
+    }else if(pid % NO_PORTI == 3){
+        coordinate_generate[0] = 0;
+        coordinate_generate[1] = SO_LATO;
+    }
+    
     return coordinate_generate;
 }
 
@@ -207,6 +224,43 @@ double generatore_banchine_porto(){
     int numero_randomico;
     numero_randomico = rand()%SO_BANCHINE;
     return numero_randomico;
+}
+
+int generatore_capacita_nave(){
+    int numero_randomico;
+    numero_randomico = rand()%SO_CAPACITY;
+    return numero_randomico;
+}
+
+/*genera casualmente un array di merci e lo restituisce*/
+struct struct_nave* generatore_array_navi(){
+    int i;
+    int j;
+    struct struct_nave* vettore_di_navi;
+    vettore_di_navi = (struct struct_nave*)malloc(sizeof(struct struct_nave)*NO_NAVI);
+
+    /*generazione delle merci e inserimento nell'array*/
+    for(i = 0; i < NO_NAVI; i++){
+        vettore_di_navi[i].posizione_nave = generatore_posizione_iniziale_nave();
+        vettore_di_navi[i].capacita_nave = generatore_capacita_nave();
+        vettore_di_navi[i].velocita_nave = SO_SPEED;
+    }
+
+    return vettore_di_navi;
+}
+
+struct struct_porto* generatore_array_porti(pid_t pid){
+    int i;
+    int j;
+    struct struct_porto* vettore_di_porti;
+    vettore_di_porti = (struct struct_porto*)malloc(sizeof(struct struct_porto)*NO_NAVI);
+
+    /*generazione delle merci e inserimento nell'array*/
+    for(i = 0; i < NO_PORTI; i++){
+        vettore_di_porti[i].posizione_porto = generatore_posizione_iniziale_porto(pid);
+    }
+
+    return vettore_di_porti;
 }
 
 #endif
