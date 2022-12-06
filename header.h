@@ -12,11 +12,11 @@
 #include<sys/ipc.h>
 #include<sys/shm.h>
 #include<sys/wait.h>
+#include<sys/sem.h>
 #include<signal.h>
 #include<errno.h>
 #include<pthread.h>
-
-/*lista delle librerie utilizzate*/
+#include<semaphore.h>
 #define NO_NAVI 10 /*numero di navi*/
 #define NO_PORTI 4 /*numero di porti*/
 #define NO_MERCI 6 /*numero di tipologie di merci*/
@@ -28,18 +28,21 @@
 #define TEMPO_SIMULATO 100 /*tempo che trascorre nella simulazione, in questo caso sono giorni*/
 #define TEMPO_REALE 100 /*tempo di durata dell'esecuzione della simulazione, in questo caso sono secondi*/
 
-#define SHM_KEY 45466 /*DA CAMBIARE ASSOLUTAMENTE*/
-#define MSQ_KEY 589621 /*IDEMMMM*/
+#define SHM_KEY 1234
+#define SEM_KEY 9876 
 
 #define SO_LATO 1000 /*grandezza per lato della mappa di 10.000 Km*/
-#define SO_BANCHINE 10
+#define SO_BANCHINE 10 /*numero di banchine*/
 
 #define SO_CAPACITY 40000000 /*massima capacità della nave di 40.000 T*/
 #define SO_SPEED 1000 /*la velocità è di mille Kh/giorno*/
 
+#define SEMREADY 0
+#define SEMSHM 1
+#define SEMPRINT 2
+
 int shared_memory_id;
-int msq_id;
-int indice; 
+int semaforo_id;
 
 struct struct_merce{
     int id_merce; /*genero la tipologia di merce con un ID numerico*/
@@ -55,6 +58,10 @@ struct struct_nave{
 
 struct struct_porto{
     double *posizione_porto;
+};
+
+struct struct_semaforo{
+    
 };
 
 
@@ -154,7 +161,7 @@ int memoria_condivisa_creazione(key_t key, size_t grandezza_memoria){
     return id;
 }
 
-int memoria_condivisa_id(key_t key, size_t grandezza_memoria){
+int memoria_condivisa_get_id(key_t key, size_t grandezza_memoria){
     int id = shmget(key, grandezza_memoria, 0666);
     if(id == -1){
         printf("Errore, non esiste una memoria condivisa associata alla key! Error number = %d\n", errno);
@@ -261,6 +268,42 @@ struct struct_porto* generatore_array_porti(pid_t pid){
     }
 
     return vettore_di_porti;
+}
+
+int semaforo_creazione(key_t key, int numero_semafori){
+    int dato_finale;
+    dato_finale = semget(key, numero_semafori, 0666 | IPC_CREAT);
+
+    if(dato_finale == -1){
+        printf("Errore nella creazione del semaforo\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return dato_finale;
+}
+
+void semaforo_imposta_valore(int semaforo_id, int semaforo_indice, int semaforo_valore){
+    if(semctl(semaforo_id, semaforo_indice, SETVAL, semaforo_valore) == -1){
+        printf("Errore nell'inizializzazione del semaforo\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+int semaforo_get_id(key_t key, int numero_semafori){
+    int dato_finale = semget(key, numero_semafori, 0666);
+
+    if(dato_finale == -1){
+        printf("Errore, non esiste semaforo associato a questa key\n");
+    }
+
+    return dato_finale;
+}
+
+void semaforo_deallocazione(int semaforo_id){
+    if(semctl(semaforo_id, 0, IPC_RMID) == -1){
+        printf("Errore nella deallocazione del semaforo\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 #endif
