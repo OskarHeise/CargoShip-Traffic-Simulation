@@ -14,9 +14,11 @@ int main(int argc, char **argv){
     vettore_risultato = (struct struct_merce*)shmat(shared_memory_id, NULL, 0666|IPC_EXCL);
     shmdt(&shared_memory_id);
 
+    /*genero la posizione del porto*/
     porto = generatore_array_porti(pid);
+    double *posizione_porto = porto[0].posizione_porto;
 
-    printf("Posizione 1: %f - %f\n", *porto[0].posizione_porto, *porto[1].posizione_porto);
+    printf("PID: %d e Posizione: %f - %f\n", pid, *posizione_porto, *(posizione_porto++));
 
     return 0;
 }
