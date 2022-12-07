@@ -72,11 +72,6 @@ struct struct_porto{
 */
 
 
-
-
-
-
-
 /*calcola la potenza*/
 double potenza(double n, int exp){
     int risultato, i;
@@ -201,33 +196,41 @@ double spostamento_nave(int velocita_nave, double *posizione_nave, double *posiz
     return risultato;
 }
 
-double *generatore_posizione_iniziale_porto(pid_t pid){
+double *generatore_posizione_iniziale_porto(pid_t pid){  /*modificare quando i porti sono piu di quattro*/
     double *coordinate_generate;
-    //*coordinate_generate = 0;
-    //*(coordinate_generate++) = 0;
+    int dato;
+    int i;
     coordinate_generate = malloc(sizeof(double)*2);
-    int dato = pid % 4;
 
-    switch(dato){
-        case 0:
-            coordinate_generate[0] = 0;
-            coordinate_generate[1] = 0;
-            break;
-        case 1:
-            coordinate_generate[0] = SO_LATO;
-            coordinate_generate[1] = 0;
-            break;
-        case 2:
-            coordinate_generate[0] = SO_LATO;
-            coordinate_generate[1] = SO_LATO;
-            break;
-        case 3:
-            coordinate_generate[0] = 0;
-            coordinate_generate[1] = SO_LATO;
-            break;
-        default:
-            break;
+    dato = pid % 4;
+
+    if(i < NO_NAVI){
+        switch(dato){
+            case 0:
+                coordinate_generate[0] = 0;
+                coordinate_generate[1] = 0;
+                break;
+            case 1:
+                coordinate_generate[0] = SO_LATO;
+                coordinate_generate[1] = 0;
+                break;
+            case 2:
+                coordinate_generate[0] = SO_LATO;
+                coordinate_generate[1] = SO_LATO;
+                break;
+            case 3:
+                coordinate_generate[0] = 0;
+                coordinate_generate[1] = SO_LATO;
+                break;
+            default:
+                break;
+        }
+        i++;
+    }else{
+        coordinate_generate[0] = rand()%(SO_LATO - 0 + 1) + 0;
+        coordinate_generate[1] = rand()%(SO_LATO - 0 + 1) + 0;
     }
+    
     
     return coordinate_generate;
 }
@@ -262,55 +265,17 @@ struct struct_nave* generatore_array_navi(){
 }
 
 int *generatore_merce_offerta_richiesta(){
-    srand(getpid());
     int *numero_randomico;
+    srand(getpid());
 
-    while(numero_randomico[1] == 0 && numero_randomico[4] == 0){
+    do{
         numero_randomico[0] = rand()%SO_MERCI;
-        numero_randomico[1] = rand()%NUMERO_TOTALE_MERCI;
+        numero_randomico[1] = rand()%NUMERO_TOTALE_MERCI+1;
         numero_randomico[2] = rand()%SO_MERCI;
-        numero_randomico[3] = rand()%NUMERO_TOTALE_MERCI;
-    }
+        numero_randomico[3] = rand()%NUMERO_TOTALE_MERCI+1;
+    }while(numero_randomico[0] == numero_randomico[2]);
 
     return numero_randomico;
 }
-
-/*gestione dei semafori*/
-
-/*int semaforo_creazione(key_t key, int numero_semafori){
-    int dato_finale;
-    dato_finale = semget(key, numero_semafori, 0666 | IPC_CREAT);
-
-    if(dato_finale == -1){
-        printf("Errore nella creazione del semaforo\n");
-        exit(EXIT_FAILURE);
-    }
-
-    return dato_finale;
-}
-
-void semaforo_imposta_valore(int semaforo_id, int semaforo_indice, int semaforo_valore){
-    if(semctl(semaforo_id, semaforo_indice, SETVAL, semaforo_valore) == -1){
-        printf("Errore nell'inizializzazione del semaforo\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-int semaforo_get_id(key_t key, int numero_semafori){
-    int dato_finale = semget(key, numero_semafori, 0666);
-
-    if(dato_finale == -1){
-        printf("Errore, non esiste semaforo associato a questa key\n");
-    }
-
-    return dato_finale;
-}
-
-void semaforo_deallocazione(int semaforo_id){
-    if(semctl(semaforo_id, 0, IPC_RMID) == -1){
-        printf("Errore nella deallocazione del semaforo\n");
-        exit(EXIT_FAILURE);
-    }
-}*/
 
 #endif
