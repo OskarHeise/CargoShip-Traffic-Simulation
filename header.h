@@ -17,9 +17,12 @@
 #include<errno.h>
 #include<pthread.h>
 #include<semaphore.h>
+#include<sys/mman.h>
+
 #define NO_NAVI 10 /*numero di navi*/
 #define NO_PORTI 4 /*numero di porti*/
-#define NO_MERCI 6 /*numero di tipologie di merci*/
+#define SO_MERCI 3 /*numero di tipologie di merci*/
+#define NUMERO_TOTALE_MERCI 10 /*numero massimo di merci*/
 
 #define SO_DAYS 365 /*durata totale in giorni dell'esperimento*/
 #define MIN_VITA 4 /*minima vita della merce*/
@@ -37,12 +40,8 @@
 #define SO_CAPACITY 40000000 /*massima capacità della nave di 40.000 T*/
 #define SO_SPEED 1000 /*la velocità è di mille Kh/giorno*/
 
-#define SEMREADY 0
-#define SEMSHM 1
-#define SEMPRINT 2
 
 int shared_memory_id;
-int semaforo_id;
 
 struct struct_merce{
     int id_merce; /*genero la tipologia di merce con un ID numerico*/
@@ -58,12 +57,8 @@ struct struct_nave{
 
 struct struct_porto{
     double *posizione_porto;
+    int *merce_offerta_richiesta;
 };
-
-struct struct_semaforo{
-    
-};
-
 
 
 /*
@@ -109,7 +104,7 @@ double radice_quadrata(double n){
 /*genera casualmente l'ID della merce*/
 int generatore_id_merce(){
     int numero_randomico;
-    numero_randomico = rand()%10;
+    numero_randomico = rand()%SO_MERCI;
     return numero_randomico;
 }
 
@@ -132,14 +127,14 @@ struct struct_merce* generatore_array_merci(){
     int i;
     int j;
     struct struct_merce* vettore_di_merci;
-    vettore_di_merci = (struct struct_merce*)malloc(sizeof(struct struct_merce)*NO_MERCI);
+    vettore_di_merci = (struct struct_merce*)malloc(sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI);
 
     /*generazione delle merci e inserimento nell'array*/
-    for(i = 0; i < NO_MERCI; i++){
+    for(i = 0; i < NUMERO_TOTALE_MERCI; i++){
         vettore_di_merci[i].id_merce = generatore_id_merce();
         vettore_di_merci[i].dimensione_merce = generatore_dimensione_merce();
         vettore_di_merci[i].tempo_vita_merce = generatore_tempo_vita_merce();
-        for(j = 0; j < NO_MERCI; j++){
+        for(j = 0; j < NUMERO_TOTALE_MERCI; j++){
             if(vettore_di_merci[i].id_merce == vettore_di_merci[j].id_merce){
                 vettore_di_merci[i].tempo_vita_merce = vettore_di_merci[j].tempo_vita_merce;
             }
@@ -208,20 +203,30 @@ double spostamento_nave(int velocita_nave, double *posizione_nave, double *posiz
 
 double *generatore_posizione_iniziale_porto(pid_t pid){
     double *coordinate_generate;
-    coordinate_generate = malloc(16);
+    //*coordinate_generate = 0;
+    //*(coordinate_generate++) = 0;
+    coordinate_generate = malloc(sizeof(double)*2);
+    int dato = pid % 4;
 
-    if(pid % NO_PORTI == 0){
-        coordinate_generate[0] = 0;
-        coordinate_generate[1] = 0;
-    }else if(pid % NO_PORTI == 1){
-        coordinate_generate[0] = SO_LATO;
-        coordinate_generate[1] = 0;
-    }else if(pid % NO_PORTI == 2){
-        coordinate_generate[0] = SO_LATO;
-        coordinate_generate[1] = SO_LATO;
-    }else if(pid % NO_PORTI == 3){
-        coordinate_generate[0] = 0;
-        coordinate_generate[1] = SO_LATO;
+    switch(dato){
+        case 0:
+            coordinate_generate[0] = 0;
+            coordinate_generate[1] = 0;
+            break;
+        case 1:
+            coordinate_generate[0] = SO_LATO;
+            coordinate_generate[1] = 0;
+            break;
+        case 2:
+            coordinate_generate[0] = SO_LATO;
+            coordinate_generate[1] = SO_LATO;
+            break;
+        case 3:
+            coordinate_generate[0] = 0;
+            coordinate_generate[1] = SO_LATO;
+            break;
+        default:
+            break;
     }
     
     return coordinate_generate;
@@ -256,21 +261,23 @@ struct struct_nave* generatore_array_navi(){
     return vettore_di_navi;
 }
 
-struct struct_porto* generatore_array_porti(pid_t pid){
-    int i;
-    int j;
-    struct struct_porto* vettore_di_porti;
-    vettore_di_porti = (struct struct_porto*)malloc(sizeof(struct struct_porto)*NO_NAVI);
+int *generatore_merce_offerta_richiesta(){
+    srand(getpid());
+    int *numero_randomico;
 
-    /*generazione delle merci e inserimento nell'array*/
-    for(i = 0; i < NO_PORTI; i++){
-        vettore_di_porti[i].posizione_porto = generatore_posizione_iniziale_porto(pid);
+    while(numero_randomico[1] == 0 && numero_randomico[4] == 0){
+        numero_randomico[0] = rand()%SO_MERCI;
+        numero_randomico[1] = rand()%NUMERO_TOTALE_MERCI;
+        numero_randomico[2] = rand()%SO_MERCI;
+        numero_randomico[3] = rand()%NUMERO_TOTALE_MERCI;
     }
 
-    return vettore_di_porti;
+    return numero_randomico;
 }
 
-int semaforo_creazione(key_t key, int numero_semafori){
+/*gestione dei semafori*/
+
+/*int semaforo_creazione(key_t key, int numero_semafori){
     int dato_finale;
     dato_finale = semget(key, numero_semafori, 0666 | IPC_CREAT);
 
@@ -304,6 +311,6 @@ void semaforo_deallocazione(int semaforo_id){
         printf("Errore nella deallocazione del semaforo\n");
         exit(EXIT_FAILURE);
     }
-}
+}*/
 
 #endif

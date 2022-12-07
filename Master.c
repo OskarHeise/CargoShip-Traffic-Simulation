@@ -1,6 +1,7 @@
 #include "header.h"
 
 int main() {
+    srand(time(NULL));  
     int navi;
     int porti;
     int i;
@@ -12,7 +13,10 @@ int main() {
     struct struct_merce* vettore_di_merci;
     pid_t pid_nave, pid_porto;
     int id;
-    srand(time(NULL));  
+    sem_t semaforo_navi;
+
+    /*generazione del vettore di merci, creazione e inizializzazione dei semafori*/
+    sem_init(&semaforo_navi, NO_NAVI, 1); /*secondo argomento è 0 thread, non zero quando viene usato con i processi; ultimo argomento è il valore iniziale del semaforo_navi*/
 
     vettore_di_merci = generatore_array_merci();
    
@@ -31,13 +35,15 @@ int main() {
                 break;            
             default:
                 /*inserisco l'array di strutture contenente la merce nella memoria condivisa*/
+                sem_wait(&semaforo_navi);
                 struct struct_merce *indirizzo_attachment;
-                shared_memory_id = memoria_condivisa_creazione(SHM_KEY, sizeof(struct struct_merce)*NO_MERCI);
+                shared_memory_id = memoria_condivisa_creazione(SHM_KEY, sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI);
                 indirizzo_attachment = (struct struct_merce*)shmat(shared_memory_id, NULL, 0);
-                for(j = 0; j < NO_MERCI; j++){
+                for(j = 0; j < NUMERO_TOTALE_MERCI; j++){
                     indirizzo_attachment[j] = vettore_di_merci[j];
                 }
                 waitpid(pid_porto, NULL, WUNTRACED);
+                sem_post(&semaforo_navi);
                 break;
             } 
     } i = 0;    
@@ -59,9 +65,9 @@ int main() {
             default:
                 /*inserisco l'array di strutture contenente la merce nella memoria condivisa*/
                 struct struct_merce *indirizzo_attachment;
-                shared_memory_id = memoria_condivisa_creazione(SHM_KEY, sizeof(struct struct_merce)*NO_MERCI);
+                shared_memory_id = memoria_condivisa_creazione(SHM_KEY, sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI);
                 indirizzo_attachment = (struct struct_merce*)shmat(shared_memory_id, NULL, 0);
-                for(j = 0; j < NO_MERCI; j++){
+                for(j = 0; j < NUMERO_TOTALE_MERCI; j++){
                     indirizzo_attachment[j] = vettore_di_merci[j];
                 }
                 waitpid(pid_porto, NULL, WUNTRACED);
@@ -70,6 +76,14 @@ int main() {
     }
 
     memoria_condivisa_deallocazione(shared_memory_id);
+
+    /*aspetto che tutti i processi siano pronti per lanciare il timer*/
+
+
+    /*faccio partire il tempo*/
+    alarm(SO_DAYS);
+    printf("\n\n\n\n\n\nTempo della simulazione partito: %d sec\n", SO_DAYS);
+
 
     return 0;
 }                                                       
