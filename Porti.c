@@ -7,6 +7,7 @@ int main(){
     struct struct_merce *vettore_risultato;
     pid_t pid;
     sem_t semaforo_porti;
+    int result;
     srand(getpid());
     
     pid = getpid();
@@ -21,14 +22,18 @@ int main(){
     porto.merce_offerta_richiesta = generatore_merce_offerta_richiesta();
     porto.posizione_porto = generatore_posizione_iniziale_porto(pid);
 
-    /*gestisco i semafori e permetto ad un solo processo alla volta di agire*/
+    /*creazione della coda di messaggi*/
 
+    /*stampo per vedere se tutto funziona*/
     printf("PID porto: %d\n", getpid());
     printf("Resto PID -> %d\n", pid % 4);
     printf("Posizione porto: (%f, %f)\n", porto.posizione_porto[0], porto.posizione_porto[1]);
     printf("Merce offerta -> tipo: %d, quantita: %d\n", porto.merce_offerta_richiesta[0], porto.merce_offerta_richiesta[1]);
     printf("Merce richiesta -> tipo: %d, quantita: %d\n", porto.merce_offerta_richiesta[2], porto.merce_offerta_richiesta[3]);
     printf("\n");
+
+
+    /*coda_messaggi_deallocazione(coda_messaggi_id);*/
 
     return 0;
 }

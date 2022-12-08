@@ -3,15 +3,12 @@
 int main() {
     struct struct_merce* vettore_di_merci;
     struct struct_merce *indirizzo_attachment;
+    int message_queue_id;
     int navi;
     int porti;
     int i;
     int j;
-    int id_merce_temporaneo;
-    int dimensione_merce_temporaneo;
-    int tempo_vita_merce_temporaneo;
     char **args;
-    int id;
     pid_t pid_nave, pid_porto;
     sem_t *semaforo_navi;
     srand(time(NULL)); 
@@ -50,9 +47,11 @@ int main() {
     /*creazione processi porto*/
 
     for(i = 0; i < NO_PORTI; i++){
-        pid_nave = fork();
+        pid_porto = fork();
+
+        if(i == 0){pid_porto_iniziale = getpid() + NO_NAVI + 1;}
         
-        switch (pid_nave){
+        switch (pid_porto){
             case -1:
                 fprintf(stderr, "Errore nella fork() della Nave");
                 exit(EXIT_FAILURE);
@@ -76,6 +75,7 @@ int main() {
 
     memoria_condivisa_deallocazione(shared_memory_id);
 
+    printf("\n\nPID PORTO INIZIALE: %d\n", pid_porto_iniziale);
 
     return 0;
 }                                                       

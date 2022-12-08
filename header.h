@@ -8,7 +8,9 @@
 #include<stdlib.h>
 #include<unistd.h>
 #include<time.h>
+#include<string.h>
 #include<sys/types.h>
+#include<sys/msg.h>
 #include<sys/ipc.h>
 #include<sys/shm.h>
 #include<sys/wait.h>
@@ -33,6 +35,7 @@
 
 #define SHM_KEY 1234
 #define SEM_KEY 9876 
+#define MSG_KEY 6218
 
 #define SO_LATO 1000 /*grandezza per lato della mappa di 10.000 Km*/
 #define SO_BANCHINE 10 /*numero di banchine*/
@@ -40,8 +43,10 @@
 #define SO_CAPACITY 40000000 /*massima capacità della nave di 40.000 T*/
 #define SO_SPEED 1000 /*la velocità è di mille Kh/giorno*/
 
-
 int shared_memory_id;
+int coda_messaggi_id;
+int pid_porto_iniziale;
+
 
 struct struct_merce{
     int id_merce; /*genero la tipologia di merce con un ID numerico*/
@@ -59,6 +64,13 @@ struct struct_porto{
     double *posizione_porto;
     int *merce_offerta_richiesta;
 };
+
+struct struct_messaggio{
+    pid_t pid_mittente;
+    pid_t pid_destinatario;
+    int messaggio;
+};
+struct struct_messaggio messaggio;
 
 
 /*
@@ -204,7 +216,9 @@ double *generatore_posizione_iniziale_porto(pid_t pid){  /*modificare quando i p
 
     dato = pid % 4;
 
-    if(i < NO_NAVI){
+    printf("\n\npid - pid_porto_iniziale: %d perche %d - %d\n\n", pid - pid_porto_iniziale, pid, pid_porto_iniziale);
+
+    if(pid - pid_porto_iniziale > 4){
         switch(dato){
             case 0:
                 coordinate_generate[0] = 0;
@@ -276,6 +290,35 @@ int *generatore_merce_offerta_richiesta(){
     }while(numero_randomico[0] == numero_randomico[2]);
 
     return numero_randomico;
+}
+
+/*gestione dei messaggi*/
+int coda_messaggi_creazione(key_t key){
+    int risultato = msgget(key, IPC_CREAT | IPC_EXCL | 0666);
+
+    if(risultato == -1){
+        printf("Errore nella creazione della coda di messaggi\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return risultato;
+}
+
+int coda_messaggi_get_id(key_t key){
+    int risultato = msgget(key, 0666);
+
+    if(risultato == -1){
+        printf("Errore, non esiste una coda di messaggi associata alla key\n");
+    }
+
+    return risultato;
+}
+
+void coda_messaggi_deallocazione(int coda_messaggi_id){
+    if(msgctl(coda_messaggi_id, IPC_RMID, NULL) == -1){
+        printf("Errore nella deallocazione della coda di messaggi\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 #endif

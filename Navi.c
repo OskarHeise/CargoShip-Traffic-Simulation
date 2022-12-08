@@ -7,6 +7,7 @@ int main(){
     struct struct_merce *vettore_risultato;
     pid_t pid;
     sem_t semaforo_navi;
+    int result;
     srand(getpid());
     
     pid = getpid(); 
@@ -22,13 +23,17 @@ int main(){
     nave.capacita_nave = generatore_capacita_nave();
     nave.velocita_nave = SO_SPEED;
 
-    printf("PID nave: %d\n", getpid());
+    /*printf("PID nave: %d\n", getpid());
     printf("Posizione nave -> %f, %f\n", nave.posizione_nave[0], nave.posizione_nave[1]);
     printf("Capacita nave -> %d\n", nave.capacita_nave);
     printf("Velocita nave -> %d\n", nave.velocita_nave);
-    printf("\n");
+    printf("\n");*/
     
     /*gestisco i semafori e permetto ad un solo processo alla volta di agire*/
+
+
+    /*ricevo il messaggio tramite la coda di messaggi*/
+
 
     return 0;
 }
