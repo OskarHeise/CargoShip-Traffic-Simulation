@@ -23,8 +23,8 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-#define NO_NAVI 10 /*numero di navi*/
-#define NO_PORTI 4 /*numero di porti*/
+#define NO_NAVI 2 /*numero di navi*/
+#define NO_PORTI 2 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 5 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 10 /*numero massimo di merci*/
 
@@ -46,13 +46,12 @@
 #define SO_CAPACITY 40000000 /*massima capacità della nave di 40.000 T*/
 #define SO_SPEED 1000 /*la velocità è di mille Kh/giorno*/
 
-const char *semaforo_nome = "/semafo";
+const char *semaforo_nome = "/sumahoro";
 
 int shared_memory_id;
 int coda_messaggi_id;
 struct struct_porto porto; 
 struct struct_nave nave;
-
 
 
 struct struct_merce{
@@ -73,11 +72,9 @@ struct struct_porto{
 };
 
 struct struct_messaggio{
-    pid_t pid_mittente;
-    pid_t pid_destinatario;
-    int messaggio;
-};
-struct struct_messaggio messaggio;
+    long tipo_messaggio;
+    int messaggio_testo;
+} messaggio;
 
 
 /*

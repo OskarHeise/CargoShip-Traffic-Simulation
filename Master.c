@@ -11,18 +11,21 @@ int main() {
     int fd;
     char **args;
     pid_t pid_processi;
-    sem_t *semaforo;
+    sem_t *semaforo_master;
     int *value;
-    srand(time(NULL)); 
+    srand(time(NULL));
+    j = 0;
+
+    semaforo_master = sem_open(semaforo_nome, O_CREAT, 0644, 1);
 
     printf("\n\n\n\n");
 
     vettore_di_merci = generatore_array_merci();
-    j = 0;
-    
+
     
     /*creazione processi nave*/
     for(i = 0; i < NO_NAVI; i++){
+        sem_wait(semaforo_master);
         switch (pid_processi = fork()){
             case -1:
                 fprintf(stderr, "Errore nella fork() della Nave");
@@ -39,16 +42,16 @@ int main() {
                 indirizzo_attachment = (struct struct_merce*)shmat(shared_memory_id, NULL, 0);
                 indirizzo_attachment[0] = vettore_di_merci[j];
                 j++;
-                waitpid(pid_processi, NULL, WUNTRACED);
+                /*waitpid(pid_processi, NULL, WUNTRACED);*/
                 break;
         }
     }
 
-    printf("\n-------------------\n");
     j = 0;
-    
+
     /*creazione processi porto*/
-    for(i = 0; i < NO_PORTI; i++){
+    for(i = 0; i < NO_PORTI+1; i++){  /*incrementato di uno per chissa quale ragione*/
+        sem_wait(semaforo_master);
         switch (pid_processi = fork()){
             case -1:
                 fprintf(stderr, "Errore nella fork() del Porto");
@@ -65,11 +68,13 @@ int main() {
                 indirizzo_attachment = (struct struct_merce*)shmat(shared_memory_id, NULL, 0);
                 indirizzo_attachment[0] = vettore_di_merci[j];
                 j++;
-                waitpid(pid_processi, NULL, WUNTRACED);
+                /*waitpid(pid_processi, NULL, WUNTRACED);*/
                 break;
         } 
     }
 
+    sem_unlink(semaforo_nome);
+    sem_close(semaforo_master);
     memoria_condivisa_deallocazione(shared_memory_id);
     return 0;
 }                                                       

@@ -6,7 +6,13 @@ int main(int argc, char **argv){
     struct struct_merce *vettore_risultato;
     int *result;
     sem_t *semaforo_nave;
+    int messaggio_id;
+    key_t messaggio_key;
     srand(getpid());
+
+    /*gestione semafori*/
+    semaforo_nave = sem_open(semaforo_nome, 0);
+    sem_post(semaforo_nave);
     
     /*ricevo l'array dalla memoria condivisa*/
     shared_memory_id = memoria_condivisa_creazione(SHM_KEY, sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI);   
@@ -20,27 +26,27 @@ int main(int argc, char **argv){
     nave.velocita_nave = SO_SPEED;
 
     /*stampo per vedere se le merci sono state portate in maniera corretta*/
-    printf("PID NAVE: %d\n", getpid());
+    /*printf("PID NAVE: %d\n", getpid());
     printf("ID merce: %d\n", vettore_risultato->id_merce);
     printf("Dimensione merce: %d\n", vettore_risultato->dimensione_merce);
     printf("Tempo vita merce: %d\n\n", vettore_risultato->tempo_vita_merce);
 
     /*stampo per vedere se tutto funziona correttamente*/
-    /*printf("PID nave: %d\n", getpid());
+    printf("PID nave: %d\n", getpid());
     printf("Posizione nave -> %f, %f\n", nave.posizione_nave[0], nave.posizione_nave[1]);
     printf("Capacita nave -> %d\n", nave.capacita_nave);
     printf("Velocita nave -> %d\n", nave.velocita_nave);
-    printf("\n");*/
+    printf("\n");
 
-    /*printf("PID nave: %d\n", getpid());
-    printf("ID merce nave: %d\n",  vettore_risultato[0].id_merce);
-    printf("Dimensione merce nave: %d\n",  vettore_risultato[0].dimensione_merce);
+    /*test coda di messaggi*/
+    /*messaggio_key = ftok("progfile", 65);
+    messaggio_id = msgget(messaggio_key, 0666 | IPC_CREAT);
+    messaggio.tipo_messaggio = 1;
+    messaggio.messaggio_testo = vettore_risultato->dimensione_merce;
+    msgsnd(messaggio_id, &messaggio, sizeof(messaggio), 0);
+    printf("Il messaggio spedito e: %d\n", messaggio.messaggio_testo);*/
 
-    
-    /*gestisco i semafori e permetto ad un solo processo alla volta di agire*/
-
-    /*ricevo il messaggio tramite la coda di messaggi*/
-    
+    sem_close(semaforo_nave);
 
     return 0;
 }
