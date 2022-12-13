@@ -24,7 +24,7 @@
 #include<fcntl.h>
 
 #define NO_NAVI 2 /*numero di navi*/
-#define NO_PORTI 2 /*numero di porti, metterne sempre uno in piu*/
+#define NO_PORTI 5 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 5 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 10 /*numero massimo di merci*/
 
@@ -282,9 +282,33 @@ struct struct_nave* generatore_array_navi(){
     return vettore_di_navi;
 }
 
+int generatore_merce_offerta_id(){
+    int numero_randomico;
+    numero_randomico = rand()%SO_MERCI;
+    return numero_randomico;
+}
+
+int generatore_merce_offerta_quantita(){
+    int numero_randomico;
+    numero_randomico = rand()%NUMERO_TOTALE_MERCI+1;
+    return numero_randomico;
+}
+
+int generatore_merce_richiesta_id(){
+    int numero_randomico;
+    numero_randomico = rand()%SO_MERCI;
+    return numero_randomico;
+}
+
+int generatore_merce_richiesta_quantita(){
+    int numero_randomico;
+    numero_randomico = rand()%NUMERO_TOTALE_MERCI+1;
+    return numero_randomico;
+}
+
 int *generatore_merce_offerta_richiesta(){
     int *numero_randomico;
-    srand(getpid());
+    /*srand(getpid());*/
 
     do{
         numero_randomico[0] = rand()%SO_MERCI;

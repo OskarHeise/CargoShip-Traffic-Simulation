@@ -50,7 +50,7 @@ int main() {
     j = 0;
 
     /*creazione processi porto*/
-    for(i = 0; i < NO_PORTI+1; i++){  /*incrementato di uno per chissa quale ragione*/
+    for(i = 0; i < NO_PORTI; i++){  /*incrementato di uno per chissa quale ragione*/
         sem_wait(semaforo_master);
         switch (pid_processi = fork()){
             case -1:

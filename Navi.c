@@ -4,10 +4,9 @@
 
 int main(int argc, char **argv){   
     struct struct_merce *vettore_risultato;
-    int *result;
     sem_t *semaforo_nave;
-    int messaggio_id;
     key_t messaggio_key;
+    int messaggio_id;
     srand(getpid());
 
     /*gestione semafori*/
