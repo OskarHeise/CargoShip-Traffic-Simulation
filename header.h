@@ -20,10 +20,12 @@
 #include<pthread.h>
 #include<semaphore.h>
 #include<sys/mman.h>
+#include<sys/stat.h>
+#include<fcntl.h>
 
 #define NO_NAVI 10 /*numero di navi*/
 #define NO_PORTI 4 /*numero di porti*/
-#define SO_MERCI 3 /*numero di tipologie di merci*/
+#define SO_MERCI 5 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 10 /*numero massimo di merci*/
 
 #define SO_DAYS 365 /*durata totale in giorni dell'esperimento*/
@@ -34,6 +36,7 @@
 #define TEMPO_REALE 100 /*tempo di durata dell'esecuzione della simulazione, in questo caso sono secondi*/
 
 #define SHM_KEY 1234
+#define SHM_KEY2 1236
 #define SEM_KEY 9876 
 #define MSG_KEY 6218
 
@@ -43,9 +46,13 @@
 #define SO_CAPACITY 40000000 /*massima capacità della nave di 40.000 T*/
 #define SO_SPEED 1000 /*la velocità è di mille Kh/giorno*/
 
+const char *semaforo_nome = "/semafo";
+
 int shared_memory_id;
 int coda_messaggi_id;
-int pid_porto_iniziale;
+struct struct_porto porto; 
+struct struct_nave nave;
+
 
 
 struct struct_merce{
@@ -125,7 +132,7 @@ int generatore_dimensione_merce(){
 /*genera casualmente il tempo di vita delle merci*/
 int generatore_tempo_vita_merce(){
     int numero_randomico;
-    numero_randomico = (rand()%(MAX_VITA - MIN_VITA +1)) + MIN_VITA;
+    numero_randomico = rand()%(MAX_VITA - MIN_VITA +1) + MIN_VITA;
     return numero_randomico;
 }
 
@@ -149,6 +156,10 @@ struct struct_merce* generatore_array_merci(){
     }
 
     return vettore_di_merci;
+}
+
+int tempo_occupazione_banchina(int quantita_merce_scambiata, int velocita_carico_scarico){
+    return quantita_merce_scambiata / velocita_carico_scarico;
 }
 
 /*Gestione della Memoria Condivisa*/
@@ -211,14 +222,11 @@ double spostamento_nave(int velocita_nave, double *posizione_nave, double *posiz
 double *generatore_posizione_iniziale_porto(pid_t pid){  /*modificare quando i porti sono piu di quattro*/
     double *coordinate_generate;
     int dato;
-    int i;
     coordinate_generate = malloc(sizeof(double)*2);
 
     dato = pid % 4;
 
-    printf("\n\npid - pid_porto_iniziale: %d perche %d - %d\n\n", pid - pid_porto_iniziale, pid, pid_porto_iniziale);
-
-    if(pid - pid_porto_iniziale > 4){
+    if(pid > 4){
         switch(dato){
             case 0:
                 coordinate_generate[0] = 0;
@@ -239,7 +247,6 @@ double *generatore_posizione_iniziale_porto(pid_t pid){  /*modificare quando i p
             default:
                 break;
         }
-        i++;
     }else{
         coordinate_generate[0] = rand()%(SO_LATO - 0 + 1) + 0;
         coordinate_generate[1] = rand()%(SO_LATO - 0 + 1) + 0;
