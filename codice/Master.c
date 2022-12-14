@@ -1,9 +1,10 @@
 #include "header.h"
 
 int main() {
-    struct struct_merce *vettore_di_merci;
     struct struct_merce *indirizzo_attachment_merce;
+    struct struct_merce *vettore_di_merci;
     struct struct_porto *indirizzo_attachment_porto;
+    struct struct_porto *vettore_di_porti;
     int message_queue_id;
     int shared_memory_id_porto;
     int navi;
@@ -18,14 +19,18 @@ int main() {
     j = 0;
     srand(time(NULL));
     
-
+    /*creazione semaforo e generazione merci*/
     semaforo_master = sem_open(semaforo_nome, O_CREAT, 0644, 1);
-
-    indirizzo_attachment_porto = NULL;
-    shared_memory_id_porto = memoria_condivisa_creazione(SHM_KEY_PORTO, sizeof(struct struct_porto));
-    indirizzo_attachment_porto = (struct struct_porto*)shmat(shared_memory_id_porto, NULL, 0);
-
     vettore_di_merci = generatore_array_merci();
+
+    /*apertura memoria condivisa per il passaggio delle informazioni dai porti alle navi*/
+    indirizzo_attachment_porto = NULL;
+    vettore_di_porti = (struct struct_porto*)malloc(sizeof(struct struct_porto) * NO_PORTI);
+    shared_memory_id_porto = memoria_condivisa_creazione(SHM_KEY_PORTO, sizeof(struct struct_porto) * NO_PORTI);
+    indirizzo_attachment_porto = (struct struct_porto*)shmat(shared_memory_id_porto, NULL, 0);
+    for(i = 0; i < NO_PORTI; i++){
+        indirizzo_attachment_porto[i] = vettore_di_porti[i];
+    }
 
     printf("\n\n\n");
 
@@ -75,7 +80,7 @@ int main() {
                 /*waitpid(pid_processi, NULL, WUNTRACED);*/
                 break;
         }
-    }
+    } j = 0;
 
     sem_unlink(semaforo_nome);
     sem_close(semaforo_master);
