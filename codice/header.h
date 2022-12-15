@@ -23,7 +23,7 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-#define NO_NAVI 2+1 /*numero di navi*/
+#define NO_NAVI 5+1 /*numero di navi*/
 #define NO_PORTI 5 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 5 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 10 /*numero massimo di merci*/
@@ -39,7 +39,7 @@
 #define SHM_KEY_PORTO 1236
 #define SEM_KEY 9876 
 
-#define SO_LATO 1000 /*grandezza per lato della mappa di 10.000 Km*/
+#define SO_LATO 10000 /*grandezza per lato della mappa di 10.000 Km*/
 #define SO_BANCHINE 10 /*numero di banchine*/
 
 #define SO_CAPACITY 40000000 /*massima capacità della nave di 40.000 T*/
@@ -74,10 +74,10 @@ struct struct_porto{
     int merce_offerta_quantita;
 };
 
-struct struct_messaggio{
-    long tipo_messaggio;
-    int messaggio_testo;
-} messaggio;
+struct struct_tempo_spostamento{
+    int secondi;
+    float nano_secondi;
+};
 
 
 /*
@@ -207,8 +207,30 @@ double *generatore_posizione_iniziale_nave(){
     return coordinate_generate;
 }
 
+/*calcola la distanza della nave da un porto*/
+double distanza_nave_porto(double *posizione_nave, double posizione_porto_X, double posizione_porto_Y){
+    double elemento_x1;
+    double elemento_y1;
+    double elemento_x2;
+    double elemento_y2;
+    double numeratore_senza_radice;
+    double numeratore_con_radice;
+    double risultato;
+
+    elemento_x1 = *posizione_nave;
+    posizione_nave++;
+    elemento_y1 = *posizione_nave;
+    elemento_x2 = posizione_porto_X;
+    elemento_y2 = posizione_porto_Y;
+
+    numeratore_senza_radice = potenza((elemento_x2 - elemento_x1), 2) + potenza((elemento_y2 - elemento_y1), 2);
+    numeratore_con_radice = radice_quadrata(numeratore_senza_radice); 
+
+    return numeratore_con_radice;
+}
+
 /*restituisce lo spostamento della nave giorno per giorno*/
-double spostamento_nave(int velocita_nave, double *posizione_nave, double posizione_porto_X, double posizione_porto_Y){
+double spostamento_nave(double *posizione_nave, double posizione_porto_X, double posizione_porto_Y){
     double elemento_x1;
     double elemento_y1;
     double elemento_x2;
@@ -225,7 +247,7 @@ double spostamento_nave(int velocita_nave, double *posizione_nave, double posizi
 
     numeratore_senza_radice = potenza((elemento_x2 - elemento_x1), 2) + potenza((elemento_y2 - elemento_y1), 2);
     numeratore_con_radice = radice_quadrata(numeratore_senza_radice);  
-    risultato = (double)numeratore_con_radice/(double)velocita_nave;
+    risultato = (double)numeratore_con_radice/(double)SO_SPEED;
     return risultato;
 }
 
@@ -362,6 +384,23 @@ void coda_messaggi_deallocazione(int coda_messaggi_id){
     }
 }
 
+void tempo_spostamento_nave(float distanza_minima_temporanea){
+    float nave_spostamento_nanosleep;
+    int secondi;
+    float nano_secondi;
+    float temp;
+    struct timespec remaining, request;
+
+    nave_spostamento_nanosleep = distanza_minima_temporanea/SO_SPEED;
+    request.tv_sec = (int)nave_spostamento_nanosleep;
+    request.tv_nsec = (nave_spostamento_nanosleep-request.tv_sec)*1000;
+    printf("distanza_minima_temporanea: %f, SO_SPEED: %d, nave_spostamento_nanosleep: %f\n", distanza_minima_temporanea, SO_SPEED, nave_spostamento_nanosleep);
+    printf("remaining.tv_sec: %ld, remaining.tv_nsec: %ld\n\n", request.tv_sec, request.tv_nsec);
+
+    if(nanosleep(&request, &remaining) < 0){
+        perror("Errore nella nanosleep dello spostamento della nave");
+    }
+}
 
 
 #endif

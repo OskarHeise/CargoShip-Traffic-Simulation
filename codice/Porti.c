@@ -38,12 +38,6 @@ int main(int argc, char **argv){
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_porto, NULL, 0);
     shared_memory_porto[(getpid() - getppid())-1] = porto;
 
-    /*printf("PID PORTO: %d\n", getpid());
-    printf("Posizione porto: %f, %f\n", porto.posizione_porto_X, porto.posizione_porto_Y);
-    printf("ID offerta: %d, offerta quantita: %d\n", porto.merce_offerta_id, porto.merce_offerta_quantita);
-    printf("ID richiesta: %d, offerta quantita: %d\n", porto.merce_richiesta_id, porto.merce_richiesta_quantita);
-    printf("Numero banchine: %d\n\n", porto.numero_banchine);*/
-
 
 
 

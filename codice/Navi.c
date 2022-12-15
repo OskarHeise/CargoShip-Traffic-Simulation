@@ -3,12 +3,14 @@
 int main(int argc, char **argv){   
     struct struct_merce *merce_nella_nave;
     struct struct_porto *informazioni_porto;
-    float *posizione_porto;
+    float distanza_minima_temporanea;
+    int porto_piu_vicino;
     sem_t *semaforo_nave;
     key_t messaggio_key;
     int shared_memory_id_porti;
     int i;
     srand(getpid());
+    distanza_minima_temporanea = SO_LATO+1;
 
     /*gestione semafori*/
     semaforo_nave = sem_open(semaforo_nome, 0);
@@ -29,15 +31,18 @@ int main(int argc, char **argv){
     shared_memory_id_porti = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto), SHM_RDONLY);  
     informazioni_porto = (struct struct_porto*)malloc(sizeof(struct struct_porto));
     informazioni_porto = (struct struct_porto*)shmat(shared_memory_id_porti, NULL, 0);
-
-    for(i = 0; i < NO_PORTI; i++){
-        printf("PID NAVE: %d\n", getpid());
-        printf("Posizione porto: %f, %f\n", informazioni_porto[i].posizione_porto_X, informazioni_porto[i].posizione_porto_Y);
-        printf("ID offerta: %d, offerta quantita: %d\n", informazioni_porto[i].merce_offerta_id, informazioni_porto[i].merce_offerta_quantita);
-        printf("ID richiesta: %d, offerta quantita: %d\n\n", informazioni_porto[i].merce_richiesta_id, informazioni_porto[i].merce_richiesta_quantita);
-    }
     
 
+    /*faccio muovere la nave fino al porto, calcolando prima la distanza e la richiesta*/
+    for(i = 0; i < NO_PORTI; i++){
+        if(informazioni_porto[i].merce_richiesta_id == merce_nella_nave->id_merce && distanza_minima_temporanea > distanza_nave_porto(nave.posizione_nave, informazioni_porto[i].posizione_porto_X, informazioni_porto[i].posizione_porto_Y)){
+            distanza_minima_temporanea = distanza_nave_porto(nave.posizione_nave, informazioni_porto[i].posizione_porto_X, informazioni_porto[i].posizione_porto_Y);
+            porto_piu_vicino = i;
+        }
+    }
+    if(distanza_minima_temporanea != SO_LATO+1){
+        tempo_spostamento_nave(distanza_minima_temporanea);
+    }
 
 
 
