@@ -31,7 +31,7 @@ int main(int argc, char **argv){
     temp_posizione_porto = generatore_posizione_iniziale_porto(getpid(), getppid());
     porto.posizione_porto_X = temp_posizione_porto[0];
     porto.posizione_porto_Y = temp_posizione_porto[1];
-    porto.numero_banchine = generatore_banchine_porto();
+    porto.numero_banchine_libere = generatore_banchine_porto();
 
     /*inserisco le informazioni nella memoria condivisa*/
     indirizzo_attachment_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto), SHM_W);
