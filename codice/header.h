@@ -23,8 +23,8 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-#define NO_NAVI 10 /*numero di navi*/
-#define NO_PORTI 3 /*numero di porti, metterne sempre uno in piu*/
+#define NO_NAVI 2+1 /*numero di navi*/
+#define NO_PORTI 5 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 5 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 10 /*numero massimo di merci*/
 
@@ -38,7 +38,6 @@
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
 #define SEM_KEY 9876 
-#define MSG_KEY 6218
 
 #define SO_LATO 1000 /*grandezza per lato della mappa di 10.000 Km*/
 #define SO_BANCHINE 10 /*numero di banchine*/
@@ -66,7 +65,9 @@ struct struct_nave{
 };
 
 struct struct_porto{
-    double *posizione_porto;
+    double posizione_porto_X;
+    double posizione_porto_Y;
+    int numero_banchine;
     int merce_richiesta_id;
     int merce_richiesta_quantita;
     int merce_offerta_id;
@@ -207,7 +208,7 @@ double *generatore_posizione_iniziale_nave(){
 }
 
 /*restituisce lo spostamento della nave giorno per giorno*/
-double spostamento_nave(int velocita_nave, double *posizione_nave, double *posizione_porto){
+double spostamento_nave(int velocita_nave, double *posizione_nave, double posizione_porto_X, double posizione_porto_Y){
     double elemento_x1;
     double elemento_y1;
     double elemento_x2;
@@ -219,9 +220,8 @@ double spostamento_nave(int velocita_nave, double *posizione_nave, double *posiz
     elemento_x1 = *posizione_nave;
     posizione_nave++;
     elemento_y1 = *posizione_nave;
-    elemento_x2 = *posizione_porto;
-    posizione_porto++;
-    elemento_y2 = *posizione_porto;
+    elemento_x2 = posizione_porto_X;
+    elemento_y2 = posizione_porto_Y;
 
     numeratore_senza_radice = potenza((elemento_x2 - elemento_x1), 2) + potenza((elemento_y2 - elemento_y1), 2);
     numeratore_con_radice = radice_quadrata(numeratore_senza_radice);  

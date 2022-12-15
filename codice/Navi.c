@@ -32,7 +32,7 @@ int main(int argc, char **argv){
 
     for(i = 0; i < NO_PORTI; i++){
         printf("PID NAVE: %d\n", getpid());
-        /*printf("Posizione porto: %f, %f\n", informazioni_porto->posizione_porto[0], informazioni_porto->posizione_porto[1]);*/
+        printf("Posizione porto: %f, %f\n", informazioni_porto[i].posizione_porto_X, informazioni_porto[i].posizione_porto_Y);
         printf("ID offerta: %d, offerta quantita: %d\n", informazioni_porto[i].merce_offerta_id, informazioni_porto[i].merce_offerta_quantita);
         printf("ID richiesta: %d, offerta quantita: %d\n\n", informazioni_porto[i].merce_richiesta_id, informazioni_porto[i].merce_richiesta_quantita);
     }

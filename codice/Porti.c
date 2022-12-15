@@ -3,6 +3,7 @@
 int main(int argc, char **argv){
     struct struct_merce *merce_nel_porto;
     struct struct_porto *shared_memory_porto;
+    double *temp_posizione_porto;
     int indirizzo_attachment_porto;
     sem_t *semaforo_porto;
     key_t messaggio_key;
@@ -27,17 +28,21 @@ int main(int argc, char **argv){
         porto.merce_offerta_id = generatore_merce_offerta_id();
         porto.merce_offerta_quantita = generatore_merce_offerta_quantita();
     }while(porto.merce_richiesta_id == porto.merce_offerta_id);
-    porto.posizione_porto = generatore_posizione_iniziale_porto(getpid(), getppid());
+    temp_posizione_porto = generatore_posizione_iniziale_porto(getpid(), getppid());
+    porto.posizione_porto_X = temp_posizione_porto[0];
+    porto.posizione_porto_Y = temp_posizione_porto[1];
+    porto.numero_banchine = generatore_banchine_porto();
 
     /*inserisco le informazioni nella memoria condivisa*/
     indirizzo_attachment_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto), SHM_W);
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_porto, NULL, 0);
     shared_memory_porto[(getpid() - getppid())-1] = porto;
 
-    printf("PID PARENT: %d, PID PORTO: %d\n", getppid(), getpid());
-    printf("Posizione porto: %f, %f\n", porto.posizione_porto[0], porto.posizione_porto[1]);
+    /*printf("PID PORTO: %d\n", getpid());
+    printf("Posizione porto: %f, %f\n", porto.posizione_porto_X, porto.posizione_porto_Y);
     printf("ID offerta: %d, offerta quantita: %d\n", porto.merce_offerta_id, porto.merce_offerta_quantita);
-    printf("ID richiesta: %d, offerta quantita: %d\n\n", porto.merce_richiesta_id, porto.merce_richiesta_quantita);
+    printf("ID richiesta: %d, offerta quantita: %d\n", porto.merce_richiesta_id, porto.merce_richiesta_quantita);
+    printf("Numero banchine: %d\n\n", porto.numero_banchine);*/
 
 
 
