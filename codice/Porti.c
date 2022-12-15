@@ -5,15 +5,15 @@ int main(int argc, char **argv){
     struct struct_porto *shared_memory_porto;
     double *temp_posizione_porto;
     int indirizzo_attachment_porto;
-    sem_t *semaforo_porto;
+    sem_t *semaforo_master;
     key_t messaggio_key;
     int messaggio_id;
     int i;
     srand(getpid());
 
     /*gestione semafori*/
-    semaforo_porto = sem_open(semaforo_nome, 0);
-    sem_post(semaforo_porto);
+    semaforo_master = sem_open(semaforo_nome, 0);
+    sem_post(semaforo_master);
 
     /*ricevo l'array dalla memoria condivisa*/
     shared_memory_id_merce = memoria_condivisa_get(SHM_KEY_MERCE, sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI, SHM_RDONLY);   
@@ -40,8 +40,6 @@ int main(int argc, char **argv){
 
 
 
-
-
-    sem_close(semaforo_porto);
+    sem_close(semaforo_master);
     return 0;
 }

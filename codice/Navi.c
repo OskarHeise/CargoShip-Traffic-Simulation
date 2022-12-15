@@ -6,6 +6,7 @@ int main(int argc, char **argv){
     float distanza_minima_temporanea;
     int porto_piu_vicino;
     int tappe_nei_porti;
+    sem_t *semaforo_master;
     sem_t *semaforo_nave;
     key_t messaggio_key;
     int shared_memory_id_porti;
@@ -15,7 +16,9 @@ int main(int argc, char **argv){
     tappe_nei_porti = 0;
 
     /*gestione semafori*/
-    semaforo_nave = sem_open(semaforo_nome, 0);
+    semaforo_master = sem_open(semaforo_nome, 0);
+    sem_post(semaforo_master);
+    semaforo_nave = sem_open(semaforo_nave_nome, O_CREAT, 0644, 0);
     sem_post(semaforo_nave);
     
     /*ricevo l'array dalla memoria condivisa*/
@@ -28,10 +31,10 @@ int main(int argc, char **argv){
     merce_nella_nave->id_merce = 0;
     merce_nella_nave->tempo_vita_merce = 999;
 
-    printf("PID nave prima: %d\n", getpid());
+    /*printf("PID nave prima: %d\n", getpid());
     printf("Merce nella nave quantita: %d\n", merce_nella_nave->dimensione_merce);
     printf("Merce nella nave id: %d\n", merce_nella_nave->id_merce);
-    printf("Merce nella nave tempo vita: %d\n", merce_nella_nave->tempo_vita_merce);
+    printf("Merce nella nave tempo vita: %d\n", merce_nella_nave->tempo_vita_merce);*/
 
     /*generazione tutte le informazioni della nave*/
     nave.posizione_nave = generatore_posizione_iniziale_nave();
@@ -46,7 +49,7 @@ int main(int argc, char **argv){
 
     /*faccio muovere la nave fino al porto, calcolando prima la distanza e la richiesta*/
     for(i = 0; i < NO_PORTI; i++){
-        if((informazioni_porto[i].merce_richiesta_id == merce_nella_nave->id_merce && distanza_minima_temporanea > distanza_nave_porto(nave.posizione_nave, informazioni_porto[i].posizione_porto_X, informazioni_porto[i].posizione_porto_Y) || tappe_nei_porti == 0)){
+        if(((informazioni_porto[i].merce_richiesta_id == merce_nella_nave->id_merce || tappe_nei_porti == 0) && distanza_minima_temporanea > distanza_nave_porto(nave.posizione_nave, informazioni_porto[i].posizione_porto_X, informazioni_porto[i].posizione_porto_Y))&& informazioni_porto[i].numero_banchine_libere != 0){
             distanza_minima_temporanea = distanza_nave_porto(nave.posizione_nave, informazioni_porto[i].posizione_porto_X, informazioni_porto[i].posizione_porto_Y);
             porto_piu_vicino = i;
         }
@@ -56,22 +59,26 @@ int main(int argc, char **argv){
     }
 
     /*gestione dell'arrivo nei porti e lo scambio della merce*/
-    if(distanza_minima_temporanea != SO_LATO+1 && porto.numero_banchine_libere != 0){ /*controllo se c'è posto*/
-        porto.numero_banchine_libere--;
-        merce_nella_nave->dimensione_merce = porto.merce_offerta_quantita;
-        merce_nella_nave->id_merce = porto.merce_offerta_id;
+    if(distanza_minima_temporanea != SO_LATO+1 && informazioni_porto[porto_piu_vicino].numero_banchine_libere != 0){ /*controllo se c'è posto*/
+        informazioni_porto[porto_piu_vicino].numero_banchine_libere--;
+        merce_nella_nave->dimensione_merce = informazioni_porto[porto_piu_vicino].merce_offerta_quantita;
+        merce_nella_nave->id_merce = informazioni_porto[porto_piu_vicino].merce_offerta_id;
         merce_nella_nave->tempo_vita_merce = generatore_tempo_vita_merce(); /*fixare questo che non è giusto*/
     }
 
     printf("\nPID nave dopo: %d\n", getpid());
     printf("Merce nella nave quantita: %d\n", merce_nella_nave->dimensione_merce);
     printf("Merce nella nave id: %d\n", merce_nella_nave->id_merce);
-    printf("Merce nella nave tempo vita: %d\n\n", merce_nella_nave->tempo_vita_merce);
+    printf("Merce nella nave tempo vita: %d\n", merce_nella_nave->tempo_vita_merce);
+    printf("Nel porto numero %d le banchine libere sono %d\n\n", porto_piu_vicino, informazioni_porto[porto_piu_vicino].numero_banchine_libere);
 
 
 
+
+    sem_wait(semaforo_nave);
     shmdt(&shared_memory_id_porti);
     shmdt(&shared_memory_id_merce);
+    sem_close(semaforo_master);
     sem_close(semaforo_nave);
     return 0;
 }

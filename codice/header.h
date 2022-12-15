@@ -23,7 +23,7 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-#define NO_NAVI 1+1 /*numero di navi*/
+#define NO_NAVI 10+1 /*numero di navi*/
 #define NO_PORTI 5 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 5 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 10 /*numero massimo di merci*/
@@ -32,8 +32,7 @@
 #define MIN_VITA 4 /*minima vita della merce*/
 #define MAX_VITA 45 /*massima vita merce*/
 #define SO_SIZE 40000 /*peso massimo della merce di 40.000 Kg*/
-#define TEMPO_SIMULATO 100 /*tempo che trascorre nella simulazione, in questo caso sono giorni*/
-#define TEMPO_REALE 100 /*tempo di durata dell'esecuzione della simulazione, in questo caso sono secondi*/
+#define TEMPO_SIMULATO 2 /*tempo che trascorre nella simulazione, in questo caso sono giorni*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
@@ -46,10 +45,14 @@
 #define SO_SPEED 1000 /*la velocità è di mille Kh/giorno*/
 
 const char *semaforo_nome = "/semaforo";
+const char *semaforo_nave_nome = "/semaforoNave";
 
 int shared_memory_id_merce;
 struct struct_porto porto; 
 struct struct_nave nave;
+clock_t inizio_tempo;
+clock_t differenza_tempo;
+int millisecondi;
 
 
 struct struct_merce{
@@ -290,7 +293,7 @@ double *generatore_posizione_iniziale_porto(pid_t pid, pid_t parent_pid){  /*mod
 
 double generatore_banchine_porto(){
     int numero_randomico;
-    numero_randomico = rand()%SO_BANCHINE;
+    numero_randomico = rand()%SO_BANCHINE+1;
     return numero_randomico;
 }
 

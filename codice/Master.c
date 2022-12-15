@@ -32,7 +32,7 @@ int main() {
         indirizzo_attachment_porto[i] = vettore_di_porti[i];
     }
 
-    printf("\n\n\n");
+    printf("\n\n\n");    
 
     /*creazione processi porto*/
     for(i = 0; i < NO_PORTI; i++){  
@@ -57,6 +57,7 @@ int main() {
                 break;
         } 
     } j = 0;
+    
 
     /*creazione processi nave*/
     for(i = 0; i < NO_NAVI; i++){
@@ -83,6 +84,7 @@ int main() {
     } j = 0;
 
     sem_unlink(semaforo_nome);
+    sem_unlink(semaforo_nave_nome);
     sem_close(semaforo_master);
     memoria_condivisa_deallocazione(shared_memory_id_porto);
     memoria_condivisa_deallocazione(shared_memory_id_merce);
