@@ -18,6 +18,7 @@ int main() {
     int *value;
     j = 0;
     srand(time(NULL));
+
     
     /*creazione semaforo e generazione merci*/
     semaforo_master = sem_open(semaforo_nome, O_CREAT, 0644, 1);
@@ -57,7 +58,6 @@ int main() {
                 break;
         } 
     } j = 0;
-    
 
     /*creazione processi nave*/
     for(i = 0; i < NO_NAVI; i++){
@@ -83,10 +83,12 @@ int main() {
         }
     } j = 0;
 
+
     sem_unlink(semaforo_nome);
     sem_unlink(semaforo_nave_nome);
     sem_close(semaforo_master);
     memoria_condivisa_deallocazione(shared_memory_id_porto);
     memoria_condivisa_deallocazione(shared_memory_id_merce);
+
     return 0;
 }                                                       

@@ -23,23 +23,22 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-#define NO_NAVI 10+1 /*numero di navi*/
+#define NO_NAVI 1+1 /*numero di navi*/
 #define NO_PORTI 5 /*numero di porti, metterne sempre uno in piu*/
-#define SO_MERCI 5 /*numero di tipologie di merci*/
-#define NUMERO_TOTALE_MERCI 10 /*numero massimo di merci*/
+#define SO_MERCI 3 /*numero di tipologie di merci*/
+#define NUMERO_TOTALE_MERCI 100 /*numero massimo di merci in tonnellate*/
 
-#define SO_DAYS 365 /*durata totale in giorni dell'esperimento*/
-#define MIN_VITA 4 /*minima vita della merce*/
-#define MAX_VITA 45 /*massima vita merce*/
+#define SO_DAYS 15 /*durata totale in giorni dell'esperimento*/
+#define MIN_VITA 5 /*minima vita della merce*/
+#define MAX_VITA 15 /*massima vita merce*/
 #define SO_SIZE 40000 /*peso massimo della merce di 40.000 Kg*/
-#define TEMPO_SIMULATO 2 /*tempo che trascorre nella simulazione, in questo caso sono giorni*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
 #define SEM_KEY 9876 
 
 #define SO_LATO 10000 /*grandezza per lato della mappa di 10.000 Km*/
-#define SO_BANCHINE 10 /*numero di banchine*/
+#define SO_BANCHINE 5 /*numero di banchine*/
 
 #define SO_CAPACITY 40000000 /*massima capacità della nave di 40.000 T*/
 #define SO_SPEED 1000 /*la velocità è di mille Kh/giorno*/
@@ -48,12 +47,17 @@ const char *semaforo_nome = "/semaforo";
 const char *semaforo_nave_nome = "/semaforoNave";
 
 int shared_memory_id_merce;
+int numero_giorno;
 struct struct_porto porto; 
 struct struct_nave nave;
 clock_t inizio_tempo;
 clock_t differenza_tempo;
 int millisecondi;
-
+int conteggio_navi_con_carico;
+int conteggio_navi_senza_carico;
+int conteggio_navi_nel_porto;
+int somma_merci_disponibili[SO_MERCI];
+int conteggio_merce_consegnata[SO_MERCI];
 
 struct struct_merce{
     int id_merce; /*genero la tipologia di merce con un ID numerico*/
@@ -67,7 +71,14 @@ struct struct_nave{
     int capacita_nave; /*capacità della nave*/
 };
 
+struct struct_conteggio_nave{
+    int conteggio_navi_con_carico;
+    int conteggio_navi_senza_carico;
+    int conteggio_navi_nel_porto;
+};
+
 struct struct_porto{
+    pid_t pid_porto;
     double posizione_porto_X;
     double posizione_porto_Y;
     int numero_banchine_libere;
@@ -75,6 +86,10 @@ struct struct_porto{
     int merce_richiesta_quantita;
     int merce_offerta_id;
     int merce_offerta_quantita;
+    int merce_offerta_tempo_vita;
+
+    int conteggio_merce_spedita_porto; 
+    int conteggio_merce_ricevuta_porto;
 };
 
 struct struct_tempo_spostamento{
@@ -121,14 +136,14 @@ double radice_quadrata(double n){
 /*genera casualmente l'ID della merce*/
 int generatore_id_merce(){
     int numero_randomico;
-    numero_randomico = rand()%SO_MERCI;
+    numero_randomico = rand()%SO_MERCI+1;
     return numero_randomico;
 }
 
 /*genera casualmente dimensione esatta delle merci*/
 int generatore_dimensione_merce(){
     int numero_randomico;
-    numero_randomico = rand()%(SO_SIZE+-1 + 1) + 1;
+    numero_randomico = rand()%(SO_SIZE -1 + 1) + 1;
     return numero_randomico;
 }
 
@@ -136,7 +151,37 @@ int generatore_dimensione_merce(){
 int generatore_tempo_vita_merce(){
     int numero_randomico;
     numero_randomico = rand()%(MAX_VITA - MIN_VITA +1) + MIN_VITA;
-    return numero_randomico;
+    return numero_randomico+1;
+}
+
+int generatore_tempo_vita_merce_offerta(int id_merce, pid_t pid_porto){
+    int i;
+    int j;
+    int risultato;
+    struct struct_merce* vettore_di_merci;
+    vettore_di_merci = (struct struct_merce*)malloc(sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI);
+    risultato = 0;
+    srand(pid_porto);
+
+    /*generazione delle merci e inserimento nell'array*/
+    for(i = 0; i < NUMERO_TOTALE_MERCI; i++){
+        vettore_di_merci[i].id_merce = generatore_id_merce();
+        vettore_di_merci[i].dimensione_merce = generatore_dimensione_merce();
+        vettore_di_merci[i].tempo_vita_merce = generatore_tempo_vita_merce();
+        for(j = 0; j < NUMERO_TOTALE_MERCI; j++){
+            if(vettore_di_merci[i].id_merce == vettore_di_merci[j].id_merce){
+                vettore_di_merci[i].tempo_vita_merce = vettore_di_merci[j].tempo_vita_merce;
+            }
+        }
+    }
+
+    for(i = 0; i < NUMERO_TOTALE_MERCI; i++){
+        if(vettore_di_merci[i].id_merce == id_merce){
+            risultato = vettore_di_merci[i].tempo_vita_merce;
+        }
+    }
+
+    return risultato;
 }
 
 /*genera casualmente un array di merci e lo restituisce*/
@@ -293,7 +338,7 @@ double *generatore_posizione_iniziale_porto(pid_t pid, pid_t parent_pid){  /*mod
 
 double generatore_banchine_porto(){
     int numero_randomico;
-    numero_randomico = rand()%SO_BANCHINE+1;
+    numero_randomico = rand()%SO_BANCHINE+2;
     return numero_randomico;
 }
 
@@ -328,7 +373,7 @@ int generatore_merce_offerta_id(){
 
 int generatore_merce_offerta_quantita(){
     int numero_randomico;
-    numero_randomico = rand()%NUMERO_TOTALE_MERCI+1;
+    numero_randomico = rand()%SO_SIZE;
     return numero_randomico;
 }
 
@@ -340,13 +385,12 @@ int generatore_merce_richiesta_id(){
 
 int generatore_merce_richiesta_quantita(){
     int numero_randomico;
-    numero_randomico = rand()%NUMERO_TOTALE_MERCI+1;
+    numero_randomico = rand()%SO_SIZE;
     return numero_randomico;
 }
 
 int *generatore_merce_offerta_richiesta(){
     int *numero_randomico;
-    /*srand(getpid());*/
 
     do{
         numero_randomico[0] = rand()%SO_MERCI;
@@ -397,6 +441,57 @@ void tempo_spostamento_nave(float distanza_minima_temporanea){
 
     if(nanosleep(&request, &remaining) < 0){
         perror("Errore nella nanosleep dello spostamento della nave");
+    }
+}
+
+void termina_programma(int segnale){
+    exit(0);
+}
+
+void print_report_giornaliero(struct struct_conteggio_nave conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata){
+    int totale_merce_consegnata;
+    int totale_nave_con_carico;
+    int totale_nave_senza_carico;
+    int totale_nave_nel_porto;
+    int i;
+    int j;
+    int k;
+
+    totale_merce_consegnata = 0;
+    totale_nave_con_carico = 0;
+    totale_nave_senza_carico = 0;
+    totale_nave_nel_porto = 0;
+
+    for(i = 0; i < NO_PORTI; i++){
+        totale_merce_consegnata = totale_merce_consegnata + informazioni_porto[i].conteggio_merce_ricevuta_porto;
+    }
+    /*for(i = 0; i < NO_NAVI; i++){
+        totale_nave_con_carico = totale_nave_con_carico + conteggio_nave[i].conteggio_navi_con_carico;
+        totale_nave_senza_carico = totale_nave_senza_carico + conteggio_nave[i].conteggio_navi_senza_carico;
+        totale_nave_nel_porto = totale_nave_nel_porto + conteggio_nave[i].conteggio_navi_nel_porto;
+    }*/
+
+    printf("\n\n------------------------------------\n\n");
+    printf("REPORT GIORNO %d\n", numero_giorno); 
+    printf("Merci:\n");  
+    for(k = 0; k < SO_MERCI; k++){
+        for(i = 0; i < NO_PORTI; i++){
+            for(j = 0; j < SO_MERCI; j++){
+                if(j == informazioni_porto[i].merce_offerta_id){
+                    somma_merci_disponibili[j] = somma_merci_disponibili[j] + informazioni_porto[i].merce_offerta_quantita;
+                    conteggio_merce_consegnata[j] = conteggio_merce_consegnata[j] + informazioni_porto[i].conteggio_merce_ricevuta_porto;
+                }
+            }
+        } 
+        
+        printf("\tTipologia: %d -> Disponibile: %d tonnellate & Consegnata: %d tonnellate\n", k, somma_merci_disponibili[k], conteggio_merce_consegnata[k]); /*fare poi un contatore per il consegnato*/
+    }
+      
+    printf("Navi:\n");
+    printf("\tCon un carico a bordo: %d - Senza un carico a bordo: %d - Nel porto: %d\n", conteggio_nave.conteggio_navi_con_carico, conteggio_nave.conteggio_navi_senza_carico, conteggio_nave.conteggio_navi_nel_porto);                                                                              
+    printf("Porti:\n");
+    for(i = 0; i < NO_PORTI; i++){
+        printf("\tNumero porto: %d - Merce totale spedita e ricevuta in tonnellate: %d, %d - Numero di banchine libere: %d\n", i+1, informazioni_porto[i].conteggio_merce_spedita_porto, informazioni_porto[i].conteggio_merce_ricevuta_porto, informazioni_porto[i].numero_banchine_libere);
     }
 }
 

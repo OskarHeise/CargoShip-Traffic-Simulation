@@ -32,13 +32,12 @@ int main(int argc, char **argv){
     porto.posizione_porto_X = temp_posizione_porto[0];
     porto.posizione_porto_Y = temp_posizione_porto[1];
     porto.numero_banchine_libere = generatore_banchine_porto();
+    porto.pid_porto = getpid();
 
     /*inserisco le informazioni nella memoria condivisa*/
     indirizzo_attachment_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto), SHM_W);
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_porto, NULL, 0);
     shared_memory_porto[(getpid() - getppid())-1] = porto;
-
-
 
     sem_close(semaforo_master);
     return 0;
