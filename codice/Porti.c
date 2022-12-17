@@ -32,6 +32,9 @@ int main(int argc, char **argv){
     porto.posizione_porto_X = temp_posizione_porto[0];
     porto.posizione_porto_Y = temp_posizione_porto[1];
     porto.numero_banchine_libere = generatore_banchine_porto();
+    porto.numero_lotti_merce = generatore_lotti_merce();
+    porto.conteggio_merce_ricevuta_porto = 0;
+    porto.conteggio_merce_spedita_porto = 0;
     porto.pid_porto = getpid();
 
     /*inserisco le informazioni nella memoria condivisa*/

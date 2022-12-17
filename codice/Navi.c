@@ -6,6 +6,7 @@ int main(int argc, char **argv){
     struct struct_conteggio_nave conteggio_nave;
     float distanza_minima_temporanea;
     int porto_visitato_in_precedenza;
+    int merce_richiesta_id_precedente;
     int porto_piu_vicino;
     int tappe_nei_porti;
     sem_t *semaforo_master;
@@ -20,15 +21,10 @@ int main(int argc, char **argv){
     numero_giorno = 1;
     porto_visitato_in_precedenza = NO_PORTI+1;
 
-    
-
     for(i = 0; i < SO_MERCI; i++){
         somma_merci_disponibili[i] = 0;
         conteggio_merce_consegnata[i] = 0;
     }
-
-    print_report_giornaliero(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata);        
-
 
     /*imposto il timer per la simulazione*/
     signal(SIGALRM, termina_programma);
@@ -78,16 +74,11 @@ int main(int argc, char **argv){
             /*arrivo al porto e scarico la merce*/
             if(informazioni_porto[porto_piu_vicino].numero_banchine_libere != 0){ /*controllo se c'è posto*/
                 informazioni_porto[porto_piu_vicino].numero_banchine_libere--;
-                informazioni_porto[porto_piu_vicino].merce_richiesta_id = generatore_merce_richiesta_id();
-                informazioni_porto[porto_piu_vicino].merce_richiesta_quantita = generatore_merce_richiesta_quantita();
-                informazioni_porto[porto_piu_vicino].merce_offerta_id = generatore_merce_offerta_id();
-                informazioni_porto[porto_piu_vicino].merce_offerta_quantita = generatore_merce_offerta_quantita();
-
                 informazioni_porto[porto_piu_vicino].conteggio_merce_ricevuta_porto = informazioni_porto[porto_piu_vicino].conteggio_merce_ricevuta_porto + merce_nella_nave->dimensione_merce;
-
                 merce_nella_nave->dimensione_merce = 0;
                 merce_nella_nave->id_merce = 0;
                 merce_nella_nave->tempo_vita_merce = 0;
+                merce_richiesta_id_precedente = informazioni_porto[porto_piu_vicino].merce_richiesta_id;
             }
 
             /*incremento contatori per poi stampare informazioni corrette alla fine del giorno*/
@@ -101,37 +92,56 @@ int main(int argc, char **argv){
 
             /*carico le navi*/
             if(informazioni_porto[porto_piu_vicino].numero_banchine_libere != 0){ /*se si trova nel porto*/
-                merce_nella_nave->dimensione_merce = informazioni_porto[porto_piu_vicino].merce_offerta_quantita;
+                informazioni_porto[porto_piu_vicino].conteggio_merce_spedita_porto = informazioni_porto[porto_piu_vicino].conteggio_merce_spedita_porto + (informazioni_porto[porto_piu_vicino].merce_offerta_quantita / informazioni_porto[porto_piu_vicino].numero_lotti_merce);
+                merce_nella_nave->dimensione_merce = informazioni_porto[porto_piu_vicino].merce_offerta_quantita / informazioni_porto[porto_piu_vicino].numero_lotti_merce;
+                informazioni_porto[porto_piu_vicino].numero_lotti_merce--;
                 merce_nella_nave->id_merce = informazioni_porto[porto_piu_vicino].merce_offerta_id;
                 merce_nella_nave->tempo_vita_merce = generatore_tempo_vita_merce_offerta(merce_nella_nave->id_merce, informazioni_porto[porto_piu_vicino].pid_porto);
-
-                informazioni_porto[porto_piu_vicino].conteggio_merce_spedita_porto = informazioni_porto[porto_piu_vicino].conteggio_merce_spedita_porto + merce_nella_nave->dimensione_merce;
             }
 
             /*ripopolo il porto*/
             if(informazioni_porto[porto_piu_vicino].numero_banchine_libere != 0){ /*se la nave era effettivamente nel porto*/
-                informazioni_porto[porto_piu_vicino].merce_richiesta_id = generatore_merce_richiesta_id();
+                do{
+                    informazioni_porto[porto_piu_vicino].merce_richiesta_id = generatore_merce_richiesta_id();
+                }while(informazioni_porto[porto_piu_vicino].merce_richiesta_id != merce_richiesta_id_precedente);
                 informazioni_porto[porto_piu_vicino].merce_richiesta_quantita = generatore_merce_richiesta_quantita();
-                informazioni_porto[porto_piu_vicino].merce_offerta_id = generatore_merce_offerta_id();
-                informazioni_porto[porto_piu_vicino].merce_offerta_quantita = generatore_merce_offerta_quantita();
+                informazioni_porto[porto_piu_vicino].merce_offerta_quantita = informazioni_porto[porto_piu_vicino].merce_offerta_quantita * informazioni_porto[porto_piu_vicino].numero_lotti_merce;
                 informazioni_porto[porto_piu_vicino].numero_banchine_libere++;
             }
             /*faccio ripartire la nave*/
 
-            /*fine del ciclo e riinizio del loop (in teoria)*/
-            
+            /*gestire il problema delle somme - FATTO (in teoria)*/
+            /*gestire la cosa dei lotti - FATTO */
+            /*gestire scadenza merce*/
+            /*fixare numero totale merci*/
+            /*gestire accesso banchina con semafori, quindi usare questi ultimi anzichè il contatore semplice*/
             /*ricordarsi di aggiungere roba nella nave e di aggiornare il contatore delle spedizioni per la print*/
+            /*usare piu di una nave e sincronizzarle tutte per benino*/
+            /*aggiungere il timer globale in qualche modo*/
+
 
             /***************************************************/
-        }
+        } /*quanto va all'infinito è perchè non trova nessun porto con la sua merce*/
 
-        print_report_giornaliero(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata);        
+        print_report_giornaliero(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata);
+
+
+
+
+        /*incremento giornata*/
         numero_giorno++;
 
+
+        /*reset dei vari parametri*/
         distanza_minima_temporanea = SO_LATO+1;
         conteggio_nave.conteggio_navi_nel_porto = 0;
         conteggio_nave.conteggio_navi_con_carico = 0;
         conteggio_nave.conteggio_navi_senza_carico = 0;
+
+        for(i = 0; i < SO_MERCI; i++){
+            somma_merci_disponibili[i] = 0;
+            conteggio_merce_consegnata[i] = 0;
+        }
     }
 
 
