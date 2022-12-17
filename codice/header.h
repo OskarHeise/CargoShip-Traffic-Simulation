@@ -28,7 +28,7 @@
 #define SO_MERCI 5 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 100 /*numero massimo di merci in tonnellate*/
 
-#define SO_DAYS 15 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 10 /*durata totale in giorni dell'esperimento*/
 #define MIN_VITA 5 /*minima vita della merce*/
 #define MAX_VITA 15 /*massima vita merce*/
 #define SO_SIZE 10000 /*peso massimo della merce di 40.000 Kg*/
@@ -450,10 +450,6 @@ void tempo_spostamento_nave(float distanza_minima_temporanea){
     if(nanosleep(&request, &remaining) < 0){
         perror("Errore nella nanosleep dello spostamento della nave");
     }
-}
-
-void termina_programma(int segnale){
-    exit(0);
 }
 
 void print_report_giornaliero(struct struct_conteggio_nave conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata){
