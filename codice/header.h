@@ -7,6 +7,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<unistd.h>
+#include<signal.h>
 #include<time.h>
 #include<string.h>
 #include<sys/types.h>
@@ -24,11 +25,11 @@
 #include<fcntl.h>
 
 #define NO_NAVI 1+1 /*numero di navi*/
-#define NO_PORTI 15 /*numero di porti, metterne sempre uno in piu*/
+#define NO_PORTI 7 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 5 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 100 /*numero massimo di merci in tonnellate*/
 
-#define SO_DAYS 10 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 5 /*durata totale in giorni dell'esperimento*/
 #define MIN_VITA 5 /*minima vita della merce*/
 #define MAX_VITA 15 /*massima vita merce*/
 #define SO_SIZE 10000 /*peso massimo della merce di 40.000 Kg*/
@@ -453,18 +454,8 @@ void tempo_spostamento_nave(float distanza_minima_temporanea){
 }
 
 void print_report_giornaliero(struct struct_conteggio_nave conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata){
-    int totale_merce_consegnata;
-    int totale_nave_con_carico;
-    int totale_nave_senza_carico;
-    int totale_nave_nel_porto;
     int i;
     int j;
-    int k;
-
-    totale_merce_consegnata = 0;
-    totale_nave_con_carico = 0;
-    totale_nave_senza_carico = 0;
-    totale_nave_nel_porto = 0;
 
     printf("\n\n------------------------------------\n\n");
     printf("REPORT GIORNO %d\n", numero_giorno); 
@@ -478,7 +469,7 @@ void print_report_giornaliero(struct struct_conteggio_nave conteggio_nave, struc
             }
         } 
         
-        printf("\tTipologia: %d -> Disponibile: %d tonnellate & Consegnata: %d tonnellate\n", k, somma_merci_disponibili[i], conteggio_merce_consegnata[i]); /*fare poi un contatore per il consegnato*/
+        printf("\tTipologia: %d -> Disponibile: %d tonnellate & Consegnata: %d tonnellate\n", i, somma_merci_disponibili[i], conteggio_merce_consegnata[i]); /*fare poi un contatore per il consegnato*/
     }
       
     printf("Navi:\n");
@@ -488,6 +479,5 @@ void print_report_giornaliero(struct struct_conteggio_nave conteggio_nave, struc
         printf("\tNumero porto: %d - Merce totale spedita e ricevuta in tonnellate: %d, %d - Numero di banchine libere: %d - Lotti rimanenti: %d\n", i+1, informazioni_porto[i].conteggio_merce_spedita_porto, informazioni_porto[i].conteggio_merce_ricevuta_porto, informazioni_porto[i].numero_banchine_libere, informazioni_porto[i].numero_lotti_merce);
     }
 }
-
 
 #endif
