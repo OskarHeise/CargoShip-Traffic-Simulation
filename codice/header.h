@@ -28,6 +28,7 @@
 #define NO_PORTI 7 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 5 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 100 /*numero massimo di merci in tonnellate*/
+#define SO_LOADSPEED 3000/*quantita di merce scambiata in tonnellate al giorno*/
 
 #define SO_DAYS 5 /*durata totale in giorni dell'esperimento*/
 #define MIN_VITA 5 /*minima vita della merce*/
@@ -447,6 +448,19 @@ void tempo_spostamento_nave(float distanza_minima_temporanea){
     nave_spostamento_nanosleep = distanza_minima_temporanea/SO_SPEED;
     request.tv_sec = (int)nave_spostamento_nanosleep;
     request.tv_nsec = (nave_spostamento_nanosleep-request.tv_sec)*1000;
+
+    if(nanosleep(&request, &remaining) < 0){
+        perror("Errore nella nanosleep dello spostamento della nave");
+    }
+}
+
+void tempo_sosta_porto(int dimensione_merce){
+    float tempo_sosta_porto_nanosleep;
+    struct timespec remaining, request;
+
+    tempo_sosta_porto_nanosleep = dimensione_merce/SO_SPEED;
+    request.tv_sec = (int)tempo_sosta_porto_nanosleep;
+    request.tv_nsec = (tempo_sosta_porto_nanosleep-request.tv_sec)*1000;
 
     if(nanosleep(&request, &remaining) < 0){
         perror("Errore nella nanosleep dello spostamento della nave");
