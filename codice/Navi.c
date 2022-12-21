@@ -62,7 +62,7 @@ int main(int argc, char **argv){
     
     /*ricevo l'array dalla memoria condivisa*/
     shared_memory_id_merce = memoria_condivisa_get(SHM_KEY_MERCE, sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI, SHM_RDONLY);   
-    merce_nella_nave = (struct struct_merce*)malloc(sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI); 
+    merce_nella_nave = (struct struct_merce*)malloc(sizeof(struct struct_merce)); 
     merce_nella_nave = (struct struct_merce*)shmat(shared_memory_id_merce, NULL, 0666|IPC_EXCL);
     shmdt(&shared_memory_id_merce); 
 
@@ -70,9 +70,6 @@ int main(int argc, char **argv){
     pid_di_stampa = (getppid() + (NO_PORTI+1)) / (getpid());
     indice_nave = merce_nella_nave->index_nave;
 
-    merce_nella_nave->dimensione_merce = -1;
-    merce_nella_nave->id_merce = -1;
-    merce_nella_nave->tempo_vita_merce = -1;
 
     /*ricevo la roba dalla memoria condivisa*/
     shared_memory_id_conteggio_nave = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_conteggio_nave)*NO_NAVI, SHM_RDONLY);
@@ -95,18 +92,26 @@ int main(int argc, char **argv){
     informazioni_porto = (struct struct_porto*)shmat(shared_memory_id_porti, NULL, 0);
 
     /*aspetto che tutti siano pronti*/
-    /*sleep(NO_NAVI - indice_nave);
+    /*sleep(NO_NAVI - indice_nave);*/
 
     /*imposto il timer*/
     sleep(1);
     pthread_create(&tid, NULL, &threadproc, NULL);
 
+    /*resetto gli indici e tutto*/
+
+    merce_nella_nave[indice_nave].dimensione_merce = -1;
+    merce_nella_nave[indice_nave].id_merce = -1;
+    merce_nella_nave[indice_nave].tempo_vita_merce = -1;
+
+
+
     while(numero_giorno < SO_DAYS+1){
 
         /*controllo la scadenza della merce nelle navi*/
-        if(merce_nella_nave->tempo_vita_merce == -1){
-            merce_nella_nave->id_merce = -1;
-            merce_nella_nave->dimensione_merce = -1;
+        if(merce_nella_nave[indice_nave].tempo_vita_merce == -1){
+            merce_nella_nave[indice_nave].id_merce = -1;
+            merce_nella_nave[indice_nave].dimensione_merce = -1;
         }
         
         for(i = 0; i < NO_PORTI; i++){
@@ -116,7 +121,7 @@ int main(int argc, char **argv){
         
         /*faccio muovere la nave fino al porto, calcolando prima la distanza e la richiesta*/
         for(i = 0; i < NO_PORTI; i++){
-            if((informazioni_porto[i].merce_richiesta_id == merce_nella_nave->id_merce || tappe_nei_porti == 0 || merce_nella_nave->tempo_vita_merce == -1) && distanza_minima_temporanea > distanza_nave_porto(nave.posizione_nave, informazioni_porto[i].posizione_porto_X, informazioni_porto[i].posizione_porto_Y) && informazioni_porto[i].numero_banchine_libere != 0){
+            if((informazioni_porto[i].merce_richiesta_id == merce_nella_nave[indice_nave].id_merce || tappe_nei_porti == 0 || merce_nella_nave[indice_nave].tempo_vita_merce == -1) && distanza_minima_temporanea > distanza_nave_porto(nave.posizione_nave, informazioni_porto[i].posizione_porto_X, informazioni_porto[i].posizione_porto_Y) && informazioni_porto[i].numero_banchine_libere != 0){
                 if(porto_visitato_in_precedenza != i){
                     distanza_minima_temporanea = distanza_nave_porto(nave.posizione_nave, informazioni_porto[i].posizione_porto_X, informazioni_porto[i].posizione_porto_Y);
                     porto_piu_vicino = i;
@@ -127,9 +132,9 @@ int main(int argc, char **argv){
         }
         
         if(distanza_minima_temporanea != SO_LATO+1){            
-            if(merce_nella_nave->dimensione_merce != 0){ /*ricordarsi di resettare questo valore ad ogni giorno*/
+            if(merce_nella_nave[indice_nave].dimensione_merce != 0){ /*ricordarsi di resettare questo valore ad ogni giorno*/
                 conteggio_nave[indice_nave].conteggio_navi_con_carico = 1;
-            }else if(merce_nella_nave->dimensione_merce < 1){
+            }else if(merce_nella_nave[indice_nave].dimensione_merce < 1){
                 conteggio_nave[indice_nave].conteggio_navi_senza_carico = 1;
             }
 
@@ -148,26 +153,28 @@ int main(int argc, char **argv){
 
             /*scarico le navi*/
             if(informazioni_porto[porto_piu_vicino].numero_banchine_libere != 0){ /*controllo se c'è posto*/
-                if(merce_nella_nave->dimensione_merce > 0){
+                if(merce_nella_nave[indice_nave].dimensione_merce > 0){
                     informazioni_porto[porto_piu_vicino].numero_banchine_libere--;
                     informazioni_porto[porto_piu_vicino].conteggio_merce_ricevuta_porto = informazioni_porto[porto_piu_vicino].conteggio_merce_ricevuta_porto + merce_nella_nave->dimensione_merce;
-                    tempo_sosta_porto(merce_nella_nave->dimensione_merce);
-                    merce_nella_nave->dimensione_merce = 0;
-                    merce_nella_nave->id_merce = 0;
-                    merce_nella_nave->tempo_vita_merce = 0;
+                    tempo_sosta_porto(merce_nella_nave[indice_nave].dimensione_merce);
+                    merce_nella_nave[indice_nave].dimensione_merce = 0;
+                    merce_nella_nave[indice_nave].id_merce = -1;
+                    merce_nella_nave[indice_nave].tempo_vita_merce = 0;
                     merce_richiesta_id_precedente = informazioni_porto[porto_piu_vicino].merce_richiesta_id;
                 }
             }
+
             
             
             /*carico le navi*/
             if(informazioni_porto[porto_piu_vicino].numero_banchine_libere != 0){ /*se si trova nel porto*/
                 informazioni_porto[porto_piu_vicino].conteggio_merce_spedita_porto = informazioni_porto[porto_piu_vicino].conteggio_merce_spedita_porto + (informazioni_porto[porto_piu_vicino].merce_offerta_quantita / informazioni_porto[porto_piu_vicino].numero_lotti_merce);
-                merce_nella_nave->dimensione_merce = informazioni_porto[porto_piu_vicino].merce_offerta_quantita / informazioni_porto[porto_piu_vicino].numero_lotti_merce;
+                merce_nella_nave[indice_nave].dimensione_merce = informazioni_porto[porto_piu_vicino].merce_offerta_quantita / informazioni_porto[porto_piu_vicino].numero_lotti_merce;
                 informazioni_porto[porto_piu_vicino].numero_lotti_merce--;
-                merce_nella_nave->id_merce = informazioni_porto[porto_piu_vicino].merce_offerta_id;
-                merce_nella_nave->tempo_vita_merce = generatore_tempo_vita_merce_offerta(merce_nella_nave->id_merce, informazioni_porto[porto_piu_vicino].pid_porto);
+                merce_nella_nave[indice_nave].id_merce = informazioni_porto[porto_piu_vicino].merce_offerta_id;
+                merce_nella_nave[indice_nave].tempo_vita_merce = generatore_tempo_vita_merce_offerta(merce_nella_nave[indice_nave].id_merce, informazioni_porto[porto_piu_vicino].pid_porto);
             }
+
             /*ripopolo il porto*/
             if(informazioni_porto[porto_piu_vicino].numero_banchine_libere != 0){ /*se la nave era effettivamente nel porto*/
                 do{
@@ -202,9 +209,9 @@ int main(int argc, char **argv){
         
         distanza_minima_temporanea = SO_LATO+1;
         conteggio_nave[indice_nave].conteggio_navi_nel_porto = 0;
-        if(merce_nella_nave->dimensione_merce != 0){ 
+        if(merce_nella_nave[indice_nave].dimensione_merce != 0){ 
             conteggio_nave[indice_nave].conteggio_navi_con_carico = 1;
-        }else if(merce_nella_nave->dimensione_merce < 1){
+        }else if(merce_nella_nave[indice_nave].dimensione_merce < 1){
             conteggio_nave[indice_nave].conteggio_navi_senza_carico = 1;
         }
         

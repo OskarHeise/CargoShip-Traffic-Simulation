@@ -24,7 +24,7 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-#define NO_NAVI 6 /*numero di navi*/
+#define NO_NAVI 2+1 /*numero di navi*/
 #define NO_PORTI 7 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 5 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 100 /*numero massimo di merci in tonnellate*/
@@ -163,7 +163,7 @@ int generatore_tempo_vita_merce(){
 
 int generatore_lotti_merce(){
     int numero_randomico;
-    numero_randomico = rand()%10+1;
+    numero_randomico = rand()%10+2;
     return numero_randomico;
 }
 
@@ -482,6 +482,10 @@ void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, stru
     conteggio_navi_senza_carico_totale = 0;
     conteggio_navi_nel_porto_totale = 0;
 
+    for(i = 0; i < NO_PORTI; i++){
+        somma_merci_disponibili[i] = 0;
+    }
+
 
     for(i = 0; i < NO_NAVI; i++){
         conteggio_navi_con_carico_totale = conteggio_navi_con_carico_totale + conteggio_nave[i].conteggio_navi_con_carico;
@@ -496,7 +500,7 @@ void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, stru
     for(i = 0; i < SO_MERCI; i++){
         for(j = 0; j < NO_PORTI; j++){
             if(i == informazioni_porto[j].merce_offerta_id){
-                somma_merci_disponibili[i] = somma_merci_disponibili[i] + informazioni_porto[j].merce_offerta_quantita;
+                somma_merci_disponibili[i] = somma_merci_disponibili[i] + informazioni_porto[j].merce_offerta_quantita * informazioni_porto[j].numero_lotti_merce;
                 conteggio_merce_consegnata[i] = conteggio_merce_consegnata[i] + informazioni_porto[j].conteggio_merce_ricevuta_porto;
             }
         } 

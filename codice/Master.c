@@ -83,6 +83,7 @@ int main() {
                 indirizzo_attachment_merce = (struct struct_merce*)shmat(shared_memory_id_merce, NULL, 0);
                 indirizzo_attachment_merce[0] = vettore_di_merci[j];
                 j++;
+                
                 /*waitpid(pid_processi, NULL, WUNTRACED);*/
                 indirizzo_attachment_conteggio_nave = NULL;
                 shared_memory_id_conteggio_nave = memoria_condivisa_creazione(SHM_KEY_CONTEGGIO, sizeof(struct struct_conteggio_nave)*NO_NAVI);
