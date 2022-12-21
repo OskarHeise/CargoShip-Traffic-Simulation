@@ -5,12 +5,14 @@ int main() {
     struct struct_merce *vettore_di_merci;
     struct struct_porto *indirizzo_attachment_porto;
     struct struct_porto *vettore_di_porti;
-    int message_queue_id;
+    struct struct_conteggio_nave *indirizzo_attachment_conteggio_nave;
+    struct struct_conteggio_nave *conteggio_nave;
     int shared_memory_id_porto;
     int navi;
     int porti;
     int i;
     int j;
+    int k;
     int fd;
     char **args;
     pid_t pid_processi;
@@ -32,6 +34,9 @@ int main() {
     for(i = 0; i < NO_PORTI; i++){
         indirizzo_attachment_porto[i] = vettore_di_porti[i];
     }
+
+    /*creazione vettore per il conteggio delle navi*/
+    conteggio_nave = (struct struct_conteggio_nave*)malloc(sizeof(struct struct_conteggio_nave) * NO_NAVI);
 
     printf("\n\n\n");    
 
@@ -79,6 +84,12 @@ int main() {
                 indirizzo_attachment_merce[0] = vettore_di_merci[j];
                 j++;
                 /*waitpid(pid_processi, NULL, WUNTRACED);*/
+                indirizzo_attachment_conteggio_nave = NULL;
+                shared_memory_id_conteggio_nave = memoria_condivisa_creazione(SHM_KEY_CONTEGGIO, sizeof(struct struct_conteggio_nave)*NO_NAVI);
+                indirizzo_attachment_conteggio_nave = (struct struct_conteggio_nave*)shmat(shared_memory_id_conteggio_nave, NULL, 0);
+                for(k = 0; k < NO_NAVI; k++){
+                    indirizzo_attachment_conteggio_nave[k] = conteggio_nave[k];
+                }
                 break;
         }
     } j = 0;
@@ -87,6 +98,7 @@ int main() {
     sem_unlink(semaforo_nome);
     sem_unlink(semaforo_nave_nome);
     sem_close(semaforo_master);
+    memoria_condivisa_deallocazione(shared_memory_id_conteggio_nave);
     memoria_condivisa_deallocazione(shared_memory_id_porto);
     memoria_condivisa_deallocazione(shared_memory_id_merce);
 

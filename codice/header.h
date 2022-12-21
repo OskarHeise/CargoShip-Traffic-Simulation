@@ -24,19 +24,20 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-#define NO_NAVI 1+1 /*numero di navi*/
+#define NO_NAVI 6 /*numero di navi*/
 #define NO_PORTI 7 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 5 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 100 /*numero massimo di merci in tonnellate*/
 #define SO_LOADSPEED 3000/*quantita di merce scambiata in tonnellate al giorno*/
 
-#define SO_DAYS 5 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 10 /*durata totale in giorni dell'esperimento*/
 #define MIN_VITA 5 /*minima vita della merce*/
 #define MAX_VITA 15 /*massima vita merce*/
 #define SO_SIZE 10000 /*peso massimo della merce di 40.000 Kg*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
+#define SHM_KEY_CONTEGGIO 7845
 #define SEM_KEY 9876 
 
 #define SO_LATO 10000 /*grandezza per lato della mappa di 10.000 Km*/
@@ -49,6 +50,7 @@ const char *semaforo_nome = "/semaforo";
 const char *semaforo_nave_nome = "/semaforoNave";
 
 int shared_memory_id_merce;
+int shared_memory_id_conteggio_nave;
 int numero_giorno;
 struct struct_porto porto; 
 struct struct_nave nave;
@@ -65,6 +67,7 @@ struct struct_merce{
     int id_merce; /*genero la tipologia di merce con un ID numerico*/
     int dimensione_merce; /*genero la grandezza delle merci*/
     int tempo_vita_merce; /*genero la durata di vita delle merci*/
+    int index_nave;
 };
 
 struct struct_nave{
@@ -211,6 +214,7 @@ struct struct_merce* generatore_array_merci(){
                 vettore_di_merci[i].tempo_vita_merce = vettore_di_merci[j].tempo_vita_merce;
             }
         }
+        vettore_di_merci[i].index_nave = i;
     }
 
     return vettore_di_merci;
@@ -467,9 +471,23 @@ void tempo_sosta_porto(int dimensione_merce){
     }
 }
 
-void print_report_giornaliero(struct struct_conteggio_nave conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata){
+void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata){
     int i;
     int j;
+    int conteggio_navi_con_carico_totale;
+    int conteggio_navi_senza_carico_totale;
+    int conteggio_navi_nel_porto_totale;
+
+    conteggio_navi_con_carico_totale = 0;
+    conteggio_navi_senza_carico_totale = 0;
+    conteggio_navi_nel_porto_totale = 0;
+
+
+    for(i = 0; i < NO_NAVI; i++){
+        conteggio_navi_con_carico_totale = conteggio_navi_con_carico_totale + conteggio_nave[i].conteggio_navi_con_carico;
+        conteggio_navi_senza_carico_totale = conteggio_navi_senza_carico_totale + conteggio_nave[i].conteggio_navi_senza_carico;
+        conteggio_navi_nel_porto_totale = conteggio_navi_nel_porto_totale + conteggio_nave[i].conteggio_navi_nel_porto;
+    }
 
     printf("\n\n------------------------------------\n\n");
     printf("REPORT GIORNO %d\n", numero_giorno); 
@@ -487,7 +505,7 @@ void print_report_giornaliero(struct struct_conteggio_nave conteggio_nave, struc
     }
       
     printf("Navi:\n");
-    printf("\tCon un carico a bordo: %d - Senza un carico a bordo: %d - Nel porto: %d\n", conteggio_nave.conteggio_navi_con_carico, conteggio_nave.conteggio_navi_senza_carico, conteggio_nave.conteggio_navi_nel_porto);                                                                              
+    printf("\tCon un carico a bordo: %d - Senza un carico a bordo: %d - Nel porto: %d\n", conteggio_navi_con_carico_totale, conteggio_navi_senza_carico_totale, conteggio_navi_nel_porto_totale);                                                                              
     printf("Porti:\n");
     for(i = 0; i < NO_PORTI; i++){
         printf("\tNumero porto: %d - Merce totale spedita e ricevuta in tonnellate: %d, %d - Numero di banchine libere: %d - Lotti rimanenti: %d\n", i+1, informazioni_porto[i].conteggio_merce_spedita_porto, informazioni_porto[i].conteggio_merce_ricevuta_porto, informazioni_porto[i].numero_banchine_libere, informazioni_porto[i].numero_lotti_merce);
