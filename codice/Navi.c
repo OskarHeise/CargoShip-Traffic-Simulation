@@ -5,7 +5,6 @@ struct struct_conteggio_nave *conteggio_nave;
 pid_t pid_di_stampa;
 int indice_nave;
 int porto_piu_vicino;
-int *totale_merce_generata_inizialmente;
 
 int numero_offerta(){
     int i;
@@ -46,7 +45,9 @@ void *threadproc(void *arg){
     sleep(1);
     /*print report finale*/
     if(pid_di_stampa == 1){
-        print_report_finale(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata, totale_merce_generata_inizialmente);
+        print_report_finale(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata, totale_merce_generata_inizialmente, merce_scaduta_in_nave, merce_scaduta_in_porto);
+        /*printone finalone*/
+        printf("\n\nTHE END\n\n");
     }
     kill(getpid(), SIGSEGV);
     return 0;
@@ -78,6 +79,7 @@ int main(int argc, char **argv){
     for(i = 0; i < SO_MERCI; i++){
         somma_merci_disponibili[i] = 0;
         conteggio_merce_consegnata[i] = 0;
+        totale_merce_generata_inizialmente[i] = 0; /*da levare per evitare blocco*/
     }
     /*imposto l'orologio*/
     tempo_iniziale = time(NULL);
@@ -132,13 +134,29 @@ int main(int argc, char **argv){
     while(numero_giorno < SO_DAYS+1){
         /*controllo la scadenza della merce nelle navi*/
         if(merce_nella_nave[indice_nave].tempo_vita_merce < 0){
+            for(i = 0; i < NO_PORTI; i++){
+                for(j = 0; j < SO_MERCI; j++){
+                    if(merce_nella_nave[indice_nave].id_merce == j){
+                        merce_scaduta_in_nave[j] = merce_scaduta_in_nave[j] + merce_nella_nave[indice_nave].dimensione_merce;
+                    }
+                }
+            }
             merce_nella_nave[indice_nave].id_merce = -1;
             merce_nella_nave[indice_nave].dimensione_merce = -1;
         }
         
         for(i = 0; i < NO_PORTI; i++){
-            if(informazioni_porto[porto_piu_vicino].merce_offerta_tempo_vita < 0){}
+            if(informazioni_porto[porto_piu_vicino].merce_offerta_tempo_vita < 0){
+                for(i = 0; i < NO_PORTI; i++){
+                    for(j = 0; j < SO_MERCI; j++){
+                        if(merce_nella_nave[indice_nave].id_merce == j){
+                            merce_scaduta_in_porto[j] = merce_scaduta_in_porto[j] + informazioni_porto[porto_piu_vicino].merce_offerta_quantita;
+                        }   
+                    }
+                }
+            }
             informazioni_porto[porto_piu_vicino].merce_offerta_id = -1;
+            informazioni_porto[porto_piu_vicino].merce_offerta_quantita = 0;
         }
         
         /*faccio muovere la nave fino al porto, calcolando prima la distanza e la richiesta*/
