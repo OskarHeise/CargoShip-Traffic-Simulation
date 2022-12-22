@@ -564,14 +564,7 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
         } 
         printf("\tTipologia: %d -> Disponibile: %d tonnellate & Consegnata: %d tonnellate\n", i, somma_merci_disponibili[i], conteggio_merce_consegnata[i]); /*fare poi un contatore per il consegnato*/
         /*printing per ogni tipo di merce*/
-        for(k = 0; k < SO_MERCI; k++){
-            for(j = 0; j < NO_PORTI; j++){
-                if(k == informazioni_porto[j].merce_offerta_id){
-                    
-                }
-            }
-        }
-        printf("Tonnellate di merce iniziale: %d\n", totale_merce_generata_inizialmente[k]); /*da vedere benissimo*/
+        printf("\tTonnellate di merce iniziale: %d\n", totale_merce_generata_inizialmente[i]); /*da vedere benissimo*/
         printf("\tTonnellate rimaste nel porto: %d & Scadute nel porto: %d &  Scadute nella nave: %d & Consegnata da qualche nave: %d\n", );
     }
     

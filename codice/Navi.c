@@ -5,6 +5,7 @@ struct struct_conteggio_nave *conteggio_nave;
 pid_t pid_di_stampa;
 int indice_nave;
 int porto_piu_vicino;
+int *totale_merce_generata_inizialmente;
 
 int numero_offerta(){
     int i;
@@ -57,7 +58,7 @@ int main(int argc, char **argv){
     int porto_visitato_in_precedenza;
     int merce_richiesta_id_precedente;
     int tappe_nei_porti;
-    int *totale_merce_generata_inizialmente;
+    int id_merce_iniziale;
     sem_t *semaforo_master;
     sem_t *semaforo_nave;
     pthread_t tid;
@@ -152,9 +153,20 @@ int main(int argc, char **argv){
             }
         }
 
-        /*memorizzazione valori iniziali porto per la statistica finale*/
+        /*memorizzazione valori iniziali porto per la statistica finale*/ /*sia nei porti che nelle navi*/
         if(tappe_nei_porti == 0){
-            totale_merce_generata_inizialmente[porto_piu_vicino] = informazioni_porto[porto_piu_vicino].merce_offerta_quantita;
+            for(i = 0; i < NO_PORTI; i++){
+                for(j = 0; j < SO_MERCI; j++){
+                    if(informazioni_porto[i].merce_offerta_id == j){
+                        totale_merce_generata_inizialmente[j] = totale_merce_generata_inizialmente[j] + informazioni_porto[i].merce_offerta_quantita;
+                    }
+                } 
+            }
+            for(j = 0; j < SO_MERCI; j++){
+                if(merce_nella_nave->id_merce == j){
+                    totale_merce_generata_inizialmente[j] = totale_merce_generata_inizialmente[j] + merce_nella_nave->dimensione_merce;
+                }
+            } 
         }
         
         if(distanza_minima_temporanea != SO_LATO+1){            
