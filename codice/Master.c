@@ -20,7 +20,6 @@ int main() {
     int *value;
     j = 0;
     srand(time(NULL));
-
     
     /*creazione semaforo e generazione merci*/
     semaforo_master = sem_open(semaforo_nome, O_CREAT, 0644, 1);
@@ -104,4 +103,4 @@ int main() {
     memoria_condivisa_deallocazione(shared_memory_id_merce);
 
     return 0;
-}                                                       
+}  
