@@ -5,6 +5,7 @@ struct struct_conteggio_nave *conteggio_nave;
 pid_t pid_di_stampa;
 int indice_nave;
 int porto_piu_vicino;
+int tappe_nei_porti;
 
 int numero_offerta(){
     int i;
@@ -42,10 +43,9 @@ void *threadproc(void *arg){
         }
         numero_giorno++;
     }
-    sleep(1);
     /*print report finale*/
     if(pid_di_stampa == 1){
-        print_report_finale(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata, totale_merce_generata_inizialmente, merce_scaduta_in_nave, merce_scaduta_in_porto);
+        print_report_finale(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata, totale_merce_generata_inizialmente, merce_scaduta_in_nave, merce_scaduta_in_porto, tappe_nei_porti);
         /*printone finalone*/
         printf("\n\nTHE END\n\n");
     }
@@ -58,7 +58,6 @@ int main(int argc, char **argv){
     float distanza_minima_temporanea;
     int porto_visitato_in_precedenza;
     int merce_richiesta_id_precedente;
-    int tappe_nei_porti;
     int id_merce_iniziale;
     sem_t *semaforo_master;
     sem_t *semaforo_nave;
@@ -165,14 +164,14 @@ int main(int argc, char **argv){
                 if(porto_visitato_in_precedenza != i){
                     distanza_minima_temporanea = distanza_nave_porto(nave.posizione_nave, informazioni_porto[i].posizione_porto_X, informazioni_porto[i].posizione_porto_Y);
                     porto_piu_vicino = i;
-                    tappe_nei_porti++;
                     porto_visitato_in_precedenza = i;
                 }
             }
         }
+        tappe_nei_porti++;
 
         /*memorizzazione valori iniziali porto per la statistica finale*/ /*sia nei porti che nelle navi*/
-        if(tappe_nei_porti == 0){
+        /*if(tappe_nei_porti == 1){
             for(i = 0; i < NO_PORTI; i++){
                 for(j = 0; j < SO_MERCI; j++){
                     if(informazioni_porto[i].merce_offerta_id == j){
@@ -181,11 +180,12 @@ int main(int argc, char **argv){
                 } 
             }
             for(j = 0; j < SO_MERCI; j++){
-                if(merce_nella_nave->id_merce == j){
-                    totale_merce_generata_inizialmente[j] = totale_merce_generata_inizialmente[j] + merce_nella_nave->dimensione_merce;
+                if(merce_nella_nave[indice_nave].id_merce == j){
+                    totale_merce_generata_inizialmente[j] = totale_merce_generata_inizialmente[j] + merce_nella_nave[indice_nave].dimensione_merce;
                 }
             } 
         }
+        /*forse è tutto da eliminare sopra*/
         
         if(distanza_minima_temporanea != SO_LATO+1){            
             if(merce_nella_nave[indice_nave].dimensione_merce != 0){ /*ricordarsi di resettare questo valore ad ogni giorno*/

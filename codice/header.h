@@ -26,11 +26,11 @@
 
 #define NO_NAVI 1+1 /*numero di navi*/
 #define NO_PORTI 7 /*numero di porti, metterne sempre uno in piu*/
-#define SO_MERCI 5 /*numero di tipologie di merci*/
+#define SO_MERCI 2 /*numero di tipologie di merci*/
 #define NUMERO_TOTALE_MERCI 100 /*numero massimo di merci in tonnellate*/
 #define SO_LOADSPEED 3000/*quantita di merce scambiata in tonnellate al giorno*/
 
-#define SO_DAYS 2 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 1 /*durata totale in giorni dell'esperimento*/
 #define MIN_VITA 15 /*minima vita della merce*/
 #define MAX_VITA 50 /*massima vita merce*/
 #define SO_SIZE 10000 /*peso massimo della merce di 40.000 Kg*/
@@ -524,7 +524,7 @@ void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, stru
     }
 }
 
-void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata, int* totale_merce_generata_inizialmente, int *merce_scaduta_in_nave, int *merce_scaduta_in_porto){
+void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata, int* totale_merce_generata_inizialmente, int *merce_scaduta_in_nave, int *merce_scaduta_in_porto, int tappe_nei_porti){
     int i;
     int j;
     int k;
@@ -549,6 +549,11 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
         conteggio_navi_senza_carico_totale = conteggio_navi_senza_carico_totale + conteggio_nave[i].conteggio_navi_senza_carico;
         conteggio_navi_nel_porto_totale = conteggio_navi_nel_porto_totale + conteggio_nave[i].conteggio_navi_nel_porto;
     }
+
+    for(i = 0; i < SO_MERCI; i++){
+        somma_merci_disponibili[i] = 0;
+        conteggio_merce_consegnata[i] = 0;
+    }
     
     printf("\n\n------------------------------------\n\n");
     printf("REPORT FINALE\n");
@@ -565,11 +570,14 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
                 somma_merci_disponibili[i] = somma_merci_disponibili[i] + informazioni_porto[j].merce_offerta_quantita * informazioni_porto[j].numero_lotti_merce;
                 conteggio_merce_consegnata[i] = conteggio_merce_consegnata[i] + informazioni_porto[j].conteggio_merce_ricevuta_porto;
             }
+            if(tappe_nei_porti == 1){
+                totale_merce_generata_inizialmente[i] = somma_merci_disponibili[i];
+            }
         } 
-        printf("\tTipologia: %d -> Disponibile: %d tonnellate & Consegnata: %d tonnellate\n", i, somma_merci_disponibili[i], conteggio_merce_consegnata[i]); /*fare poi un contatore per il consegnato*/
+        printf("\tTipologia: %d -> \n\t\tDisponibile: %d tonnellate & Consegnata: %d tonnellate\n", i, somma_merci_disponibili[i], conteggio_merce_consegnata[i]); /*fare poi un contatore per il consegnato*/
         /*printing per ogni tipo di merce*/
-        printf("\tTonnellate di merce iniziale: %d\n", totale_merce_generata_inizialmente[i]); 
-        printf("\tTonnellate rimaste nel porto: %d & Scadute nel porto: %d &  Scadute nella nave: %d & Consegnata da qualche nave: %d\n", somma_merci_disponibili[i], merce_scaduta_in_porto[i], merce_scaduta_in_nave[i], conteggio_merce_consegnata[i]);
+        printf("\t\tTonnellate di merce iniziale: %d\n", totale_merce_generata_inizialmente[i]); 
+        printf("\t\tTonnellate rimaste nel porto: %d & Scadute nel porto: %d &  Scadute nella nave: %d & Consegnata da qualche nave: %d\n", somma_merci_disponibili[i], merce_scaduta_in_porto[i], merce_scaduta_in_nave[i], conteggio_merce_consegnata[i]);
         /*fine printone*/
     }
     
