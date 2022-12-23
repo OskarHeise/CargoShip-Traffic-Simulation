@@ -27,20 +27,20 @@ int main() {
 
     /*apertura memoria condivisa per il passaggio delle informazioni dai porti alle navi*/
     indirizzo_attachment_porto = NULL;
-    vettore_di_porti = (struct struct_porto*)malloc(sizeof(struct struct_porto) * NO_PORTI);
-    shared_memory_id_porto = memoria_condivisa_creazione(SHM_KEY_PORTO, sizeof(struct struct_porto) * NO_PORTI);
+    vettore_di_porti = (struct struct_porto*)malloc(sizeof(struct struct_porto) * SO_PORTI);
+    shared_memory_id_porto = memoria_condivisa_creazione(SHM_KEY_PORTO, sizeof(struct struct_porto) * SO_PORTI);
     indirizzo_attachment_porto = (struct struct_porto*)shmat(shared_memory_id_porto, NULL, 0);
-    for(i = 0; i < NO_PORTI; i++){
+    for(i = 0; i < SO_PORTI; i++){
         indirizzo_attachment_porto[i] = vettore_di_porti[i];
     }
 
     /*creazione vettore per il conteggio delle navi*/
-    conteggio_nave = (struct struct_conteggio_nave*)malloc(sizeof(struct struct_conteggio_nave) * NO_NAVI);
+    conteggio_nave = (struct struct_conteggio_nave*)malloc(sizeof(struct struct_conteggio_nave) * SO_NAVI);
 
     printf("\n\n\n");    
 
     /*creazione processi porto*/
-    for(i = 0; i < NO_PORTI; i++){  
+    for(i = 0; i < SO_PORTI; i++){  
         sem_wait(semaforo_master);
         switch (pid_processi = fork()){
             case -1:
@@ -64,7 +64,7 @@ int main() {
     } j = 0;
 
     /*creazione processi nave*/
-    for(i = 0; i < NO_NAVI; i++){
+    for(i = 0; i < SO_NAVI; i++){
         sem_wait(semaforo_master);
         switch (pid_processi = fork()){
             case -1:
@@ -85,9 +85,9 @@ int main() {
                 
                 /*waitpid(pid_processi, NULL, WUNTRACED);*/
                 indirizzo_attachment_conteggio_nave = NULL;
-                shared_memory_id_conteggio_nave = memoria_condivisa_creazione(SHM_KEY_CONTEGGIO, sizeof(struct struct_conteggio_nave)*NO_NAVI);
+                shared_memory_id_conteggio_nave = memoria_condivisa_creazione(SHM_KEY_CONTEGGIO, sizeof(struct struct_conteggio_nave)*SO_NAVI);
                 indirizzo_attachment_conteggio_nave = (struct struct_conteggio_nave*)shmat(shared_memory_id_conteggio_nave, NULL, 0);
-                for(k = 0; k < NO_NAVI; k++){
+                for(k = 0; k < SO_NAVI; k++){
                     indirizzo_attachment_conteggio_nave[k] = conteggio_nave[k];
                 }
                 break;

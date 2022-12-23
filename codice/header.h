@@ -24,13 +24,14 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-#define NO_NAVI 1+1 /*numero di navi*/
-#define NO_PORTI 7 /*numero di porti, metterne sempre uno in piu*/
+#define SO_NAVI 1+1 /*numero di navi*/
+#define SO_PORTI 7 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 2 /*numero di tipologie di merci*/
-#define NUMERO_TOTALE_MERCI 100 /*numero massimo di merci in tonnellate*/
+#define SO_FILL 5000
+#define NUMERO_TOTALE_MERCI (SO_NAVI+SO_MERCI) /*numero massimo di merci in tonnellate*/
 #define SO_LOADSPEED 3000/*quantita di merce scambiata in tonnellate al giorno*/
 
-#define SO_DAYS 1 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 5 /*durata totale in giorni dell'esperimento*/
 #define MIN_VITA 15 /*minima vita della merce*/
 #define MAX_VITA 50 /*massima vita merce*/
 #define SO_SIZE 10000 /*peso massimo della merce di 40.000 Kg*/
@@ -375,28 +376,16 @@ struct struct_nave* generatore_array_navi(){
     int i;
     int j;
     struct struct_nave* vettore_di_navi;
-    vettore_di_navi = (struct struct_nave*)malloc(sizeof(struct struct_nave)*NO_NAVI);
+    vettore_di_navi = (struct struct_nave*)malloc(sizeof(struct struct_nave)*SO_NAVI);
 
     /*generazione delle merci e inserimento nell'array*/
-    for(i = 0; i < NO_NAVI; i++){
+    for(i = 0; i < SO_NAVI; i++){
         vettore_di_navi[i].posizione_nave = generatore_posizione_iniziale_nave();
         vettore_di_navi[i].capacita_nave = generatore_capacita_nave();
         vettore_di_navi[i].velocita_nave = SO_SPEED;
     }
 
     return vettore_di_navi;
-}
-
-int generatore_merce_offerta_id(){
-    int numero_randomico;
-    numero_randomico = rand()%SO_MERCI;
-    return numero_randomico;
-}
-
-int generatore_merce_offerta_quantita(){
-    int numero_randomico;
-    numero_randomico = rand()%SO_SIZE;
-    return numero_randomico;
 }
 
 int generatore_merce_richiesta_id(){
@@ -407,7 +396,19 @@ int generatore_merce_richiesta_id(){
 
 int generatore_merce_richiesta_quantita(){
     int numero_randomico;
-    numero_randomico = rand()%SO_SIZE;
+    numero_randomico = rand()%SO_FILL;
+    return numero_randomico;
+}
+
+int generatore_merce_offerta_id(){
+    int numero_randomico;
+    numero_randomico = rand()%SO_MERCI;
+    return numero_randomico;
+}
+
+int generatore_merce_offerta_quantita(int merce_richiesta_quantita){
+    int numero_randomico;
+    numero_randomico = SO_FILL - merce_richiesta_quantita;
     return numero_randomico;
 }
 
@@ -490,12 +491,12 @@ void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, stru
     conteggio_navi_senza_carico_totale = 0;
     conteggio_navi_nel_porto_totale = 0;
 
-    for(i = 0; i < NO_PORTI; i++){
+    for(i = 0; i < SO_PORTI; i++){
         somma_merci_disponibili[i] = 0;
     }
 
 
-    for(i = 0; i < NO_NAVI-1; i++){
+    for(i = 0; i < SO_NAVI-1; i++){
         conteggio_navi_con_carico_totale = conteggio_navi_con_carico_totale + conteggio_nave[i].conteggio_navi_con_carico;
         conteggio_navi_senza_carico_totale = conteggio_navi_senza_carico_totale + conteggio_nave[i].conteggio_navi_senza_carico;
         conteggio_navi_nel_porto_totale = conteggio_navi_nel_porto_totale + conteggio_nave[i].conteggio_navi_nel_porto;
@@ -506,20 +507,20 @@ void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, stru
     printf("Merci:\n");  
     
     for(i = 0; i < SO_MERCI; i++){
-        for(j = 0; j < NO_PORTI; j++){
+        for(j = 0; j < SO_PORTI; j++){
             if(i == informazioni_porto[j].merce_offerta_id){
                 somma_merci_disponibili[i] = somma_merci_disponibili[i] + informazioni_porto[j].merce_offerta_quantita * informazioni_porto[j].numero_lotti_merce;
                 conteggio_merce_consegnata[i] = conteggio_merce_consegnata[i] + informazioni_porto[j].conteggio_merce_ricevuta_porto;
             }
         } 
-        
         printf("\tTipologia: %d -> Disponibile: %d tonnellate & Consegnata: %d tonnellate\n", i, somma_merci_disponibili[i], conteggio_merce_consegnata[i]); /*fare poi un contatore per il consegnato*/
     }
+
       
     printf("Navi:\n");
     printf("\tCon un carico a bordo: %d - Senza un carico a bordo: %d - Nel porto: %d\n", conteggio_navi_con_carico_totale, conteggio_navi_senza_carico_totale, conteggio_navi_nel_porto_totale);                                                                              
     printf("Porti:\n");
-    for(i = 0; i < NO_PORTI; i++){
+    for(i = 0; i < SO_PORTI; i++){
         printf("\tNumero porto: %d - Merce totale spedita e ricevuta in tonnellate: %d, %d - Numero di banchine libere: %d - Lotti rimanenti: %d\n", i+1, informazioni_porto[i].conteggio_merce_spedita_porto, informazioni_porto[i].conteggio_merce_ricevuta_porto, informazioni_porto[i].numero_banchine_libere, informazioni_porto[i].numero_lotti_merce);
     }
 }
@@ -544,7 +545,7 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
     porto_richiesto_maggiore_conto = 0;
     porto_richiesto_maggiore = 0;
 
-    for(i = 0; i < NO_NAVI-1; i++){
+    for(i = 0; i < SO_NAVI-1; i++){
         conteggio_navi_con_carico_totale = conteggio_navi_con_carico_totale + conteggio_nave[i].conteggio_navi_con_carico;
         conteggio_navi_senza_carico_totale = conteggio_navi_senza_carico_totale + conteggio_nave[i].conteggio_navi_senza_carico;
         conteggio_navi_nel_porto_totale = conteggio_navi_nel_porto_totale + conteggio_nave[i].conteggio_navi_nel_porto;
@@ -565,13 +566,10 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
 
     printf("Merci:\n");  
     for(i = 0; i < SO_MERCI; i++){
-        for(j = 0; j < NO_PORTI; j++){
+        for(j = 0; j < SO_PORTI; j++){
             if(i == informazioni_porto[j].merce_offerta_id){
                 somma_merci_disponibili[i] = somma_merci_disponibili[i] + informazioni_porto[j].merce_offerta_quantita * informazioni_porto[j].numero_lotti_merce;
                 conteggio_merce_consegnata[i] = conteggio_merce_consegnata[i] + informazioni_porto[j].conteggio_merce_ricevuta_porto;
-            }
-            if(tappe_nei_porti == 1){
-                totale_merce_generata_inizialmente[i] = somma_merci_disponibili[i];
             }
         } 
         printf("\tTipologia: %d -> \n\t\tDisponibile: %d tonnellate & Consegnata: %d tonnellate\n", i, somma_merci_disponibili[i], conteggio_merce_consegnata[i]); /*fare poi un contatore per il consegnato*/
@@ -583,21 +581,21 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
     
 
     printf("Porti:\n");
-    for(i = 0; i < NO_PORTI; i++){
+    for(i = 0; i < SO_PORTI; i++){
         printf("\tNumero porto: %d - Merce totale spedita e ricevuta in tonnellate: %d, %d - Numero di banchine libere: %d - Lotti rimanenti: %d\n", i+1, informazioni_porto[i].conteggio_merce_spedita_porto, informazioni_porto[i].conteggio_merce_ricevuta_porto, informazioni_porto[i].numero_banchine_libere, informazioni_porto[i].numero_lotti_merce);
         if(porto_offerto_maggiore_conto < informazioni_porto[i].conteggio_merce_spedita_porto){
-            porto_offerto_maggiore = i+1;
+            porto_offerto_maggiore = i;
         }
         if(porto_richiesto_maggiore_conto < informazioni_porto[i].conteggio_merce_spedita_porto){
-            porto_richiesto_maggiore = i+1;
+            porto_richiesto_maggiore = i;
         }
     }
    
 
 
     /*print del porto che ha offerto quantita maggiore di merce*/
-    printf("\nIl porto che ha offerto la quantita' maggiore di merce e': %d\n", porto_offerto_maggiore);
-    printf("Il porto che ha richiesto la quantita' maggiore di merce e': %d\n", porto_richiesto_maggiore);
+    printf("\nIl porto che ha offerto la quantita' maggiore di merce e': %d\n", porto_offerto_maggiore+1);
+    printf("Il porto che ha richiesto la quantita' maggiore di merce e': %d\n", porto_richiesto_maggiore+1);
 }
 
 #endif
