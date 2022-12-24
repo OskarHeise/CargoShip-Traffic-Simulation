@@ -32,6 +32,7 @@ int numero_richiesta(){
 void *threadproc(void*);
 
 void *threadproc(void *arg){
+    int i;
     while((numero_giorno < SO_DAYS+1) || (numero_offerta() == 0 && numero_richiesta() == 0)){ /*modificare poi questa condizione*/
         /*aggiornamento della data di scadenza*/
         merce_nella_nave[indice_nave].tempo_vita_merce--;
@@ -48,6 +49,7 @@ void *threadproc(void *arg){
         /*printone finalone*/
         printf("\n\nTHE END\n\n");
     }
+    sleep(1);
     kill(getpid(), SIGSEGV);
     return 0;
 }
