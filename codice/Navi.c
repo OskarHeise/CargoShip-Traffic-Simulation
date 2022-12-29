@@ -38,13 +38,13 @@ void *threadproc(void *arg){
         merce_nella_nave[indice_nave].tempo_vita_merce--;
         informazioni_porto[porto_piu_vicino].merce_offerta_tempo_vita--;
         sleep(1);
-        if(pid_di_stampa == 1){
+        if(pid_di_stampa == 0 && numero_giorno < SO_DAYS+1){
             print_report_giornaliero(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata); /*print report*/
         }
         numero_giorno++;
     }
     /*print report finale*/
-    if(pid_di_stampa == 1){
+    if(pid_di_stampa == 0 && (numero_giorno > SO_DAYS)){
         print_report_finale(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata, totale_merce_generata_inizialmente, merce_scaduta_in_nave, merce_scaduta_in_porto, tappe_nei_porti);
         /*printone finalone*/
         printf("\n\nTHE END\n\n");
@@ -76,11 +76,19 @@ int main(int argc, char **argv){
     tappe_nei_porti = 0;
     numero_giorno = 1;
 
+    /*inizializzazioni variabili per statistiche finali*/
     for(i = 0; i < SO_MERCI; i++){
         somma_merci_disponibili[i] = 0;
         conteggio_merce_consegnata[i] = 0;
         totale_merce_generata_inizialmente[i] = 0; /*da levare per evitare blocco*/
     }
+    for(i = 0; i < SO_NAVI; i++){
+        merce_scaduta_in_nave[i] = 0;
+    }
+    for(i = 0; i < SO_PORTI; i++){
+        merce_scaduta_in_porto[i] = 0;
+    }
+
     /*imposto l'orologio*/
     tempo_iniziale = time(NULL);
     tempo_corrente = tempo_corrente;
@@ -89,18 +97,17 @@ int main(int argc, char **argv){
     semaforo_master = sem_open(semaforo_nome, 0);
     sem_post(semaforo_master);
     semaforo_nave = sem_open(semaforo_nave_nome, O_CREAT, 0644, 0);
-    sem_post(semaforo_nave);
     
     /*ricevo l'array dalla memoria condivisa*/
-    shared_memory_id_merce = memoria_condivisa_get(SHM_KEY_MERCE, sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI, SHM_RDONLY);   
+    shared_memory_id_merce = memoria_condivisa_get(SHM_KEY_MERCE, sizeof(struct struct_merce)*(SO_NAVI+SO_PORTI), SHM_RDONLY);   
     merce_nella_nave = (struct struct_merce*)malloc(sizeof(struct struct_merce)); 
     merce_nella_nave = (struct struct_merce*)shmat(shared_memory_id_merce, NULL, 0666|IPC_EXCL);
     shmdt(&shared_memory_id_merce); 
 
     /*setto indici*/
-    pid_di_stampa = (getppid() + (SO_PORTI+1)) / (getpid());
+    pid_di_stampa = ((getppid()) + (SO_PORTI+1) + (SO_NAVI-3)) / (getpid());
+    printf("PID NAVE: %d, pid_di_stampa: %d\n", getpid(), pid_di_stampa);
     indice_nave = merce_nella_nave->index_nave;
-
 
     /*ricevo la roba dalla memoria condivisa*/
     shared_memory_id_conteggio_nave = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_conteggio_nave)*SO_NAVI, SHM_RDONLY);
@@ -138,7 +145,7 @@ int main(int argc, char **argv){
             for(i = 0; i < SO_PORTI; i++){
                 for(j = 0; j < SO_MERCI; j++){
                     if(merce_nella_nave[indice_nave].id_merce == j){
-                        merce_scaduta_in_nave[j] = merce_scaduta_in_nave[j] + merce_nella_nave[indice_nave].dimensione_merce;
+                        merce_scaduta_in_nave[j] = merce_scaduta_in_nave[j] + merce_nella_nave[indice_nave].dimensione_merce * informazioni_porto[i].numero_lotti_merce;
                     }
                 }
             }
@@ -151,7 +158,7 @@ int main(int argc, char **argv){
                 for(i = 0; i < SO_PORTI; i++){
                     for(j = 0; j < SO_MERCI; j++){
                         if(merce_nella_nave[i].id_merce == j){
-                            merce_scaduta_in_porto[j] = merce_scaduta_in_porto[j] + informazioni_porto[i].merce_offerta_quantita;
+                            merce_scaduta_in_porto[j] = merce_scaduta_in_porto[j] + informazioni_porto[i].merce_offerta_quantita * informazioni_porto[i].numero_lotti_merce;
                         }   
                     }
                 }
@@ -177,13 +184,13 @@ int main(int argc, char **argv){
             for(i = 0; i < SO_PORTI; i++){
                 for(j = 0; j < SO_MERCI; j++){
                     if(informazioni_porto[i].merce_offerta_id == j){
-                        totale_merce_generata_inizialmente[j] = totale_merce_generata_inizialmente[j] + informazioni_porto[i].merce_offerta_quantita;
+                        totale_merce_generata_inizialmente[j] = totale_merce_generata_inizialmente[j] + informazioni_porto[i].merce_offerta_quantita * informazioni_porto[i].numero_lotti_merce;
                     }
                 } 
             }
             for(j = 0; j < SO_MERCI; j++){
                 if(merce_nella_nave[indice_nave].id_merce == j){
-                    totale_merce_generata_inizialmente[j] = totale_merce_generata_inizialmente[j] + merce_nella_nave[indice_nave].dimensione_merce;
+                    totale_merce_generata_inizialmente[j] = totale_merce_generata_inizialmente[j] + merce_nella_nave[indice_nave].dimensione_merce * informazioni_porto[i].numero_lotti_merce;
                 }
             } 
         }
@@ -195,6 +202,7 @@ int main(int argc, char **argv){
             conteggio_nave[indice_nave].conteggio_navi_senza_carico = 1;
         }  
         
+        
         if(distanza_minima_temporanea != SO_LATO+1){                   
             /*mi sposto*/
             tempo_spostamento_nave(distanza_minima_temporanea);
@@ -204,6 +212,8 @@ int main(int argc, char **argv){
             conteggio_nave[indice_nave].conteggio_navi_senza_carico = 0;
             conteggio_nave[indice_nave].conteggio_navi_nel_porto = 1;
 
+
+            sem_post(semaforo_nave);
             /*scarico le navi*/
             if(informazioni_porto[porto_piu_vicino].numero_banchine_libere != 0){ /*controllo se c'è posto*/
                 if(merce_nella_nave[indice_nave].dimensione_merce > 0){
@@ -239,8 +249,8 @@ int main(int argc, char **argv){
             }
             /*faccio ripartire la nave*/
             
-            /*vedere se le navi si fermano nei porti effettivamente o no*/
             /***************************************************/
+            sem_wait(semaforo_nave);
         } /*quanto va all'infinito è perchè non trova nessun porto con la sua merce*/
         
         /*reset dei vari parametri*/
@@ -262,7 +272,6 @@ int main(int argc, char **argv){
     }    
 
 
-    sem_wait(semaforo_nave);
     shmdt(&shared_memory_id_porti);
     shmdt(&shared_memory_id_merce);
     sem_close(semaforo_master);

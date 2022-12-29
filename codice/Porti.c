@@ -16,8 +16,8 @@ int main(int argc, char **argv){
     sem_post(semaforo_master);
 
     /*ricevo l'array dalla memoria condivisa*/
-    shared_memory_id_merce = memoria_condivisa_get(SHM_KEY_MERCE, sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI, SHM_RDONLY);   
-    merce_nel_porto = (struct struct_merce*)malloc(sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI); 
+    shared_memory_id_merce = memoria_condivisa_get(SHM_KEY_MERCE, sizeof(struct struct_merce)*(SO_NAVI+SO_PORTI), SHM_RDONLY);   
+    merce_nel_porto = (struct struct_merce*)malloc(sizeof(struct struct_merce)*(SO_NAVI+SO_PORTI)); 
     merce_nel_porto = (struct struct_merce*)shmat(shared_memory_id_merce, NULL, 0666|IPC_EXCL);
     shmdt(&shared_memory_id_merce);
 

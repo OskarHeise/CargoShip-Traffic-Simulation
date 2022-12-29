@@ -54,7 +54,7 @@ int main() {
             default:
                 /*inserisco l'array di strutture contenente la merce nella memoria condivisa*/
                 indirizzo_attachment_merce = NULL;
-                shared_memory_id_merce = memoria_condivisa_creazione(SHM_KEY_MERCE, sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI);
+                shared_memory_id_merce = memoria_condivisa_creazione(SHM_KEY_MERCE, sizeof(struct struct_merce)*(SO_NAVI+SO_PORTI));
                 indirizzo_attachment_merce = (struct struct_merce*)shmat(shared_memory_id_merce, NULL, 0);
                 indirizzo_attachment_merce[0] = vettore_di_merci[j];
                 j++;
@@ -78,7 +78,7 @@ int main() {
             default:
                 /*inserisco l'array di strutture contenente la merce nella memoria condivisa*/
                 indirizzo_attachment_merce = NULL;
-                shared_memory_id_merce = memoria_condivisa_creazione(SHM_KEY_MERCE, sizeof(struct struct_merce)*NUMERO_TOTALE_MERCI);
+                shared_memory_id_merce = memoria_condivisa_creazione(SHM_KEY_MERCE, sizeof(struct struct_merce)*(SO_NAVI+SO_PORTI));
                 indirizzo_attachment_merce = (struct struct_merce*)shmat(shared_memory_id_merce, NULL, 0);
                 indirizzo_attachment_merce[0] = vettore_di_merci[j];
                 j++;
