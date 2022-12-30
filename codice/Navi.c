@@ -106,7 +106,6 @@ int main(int argc, char **argv){
 
     /*setto indici*/
     pid_di_stampa = ((getppid()) + (SO_PORTI+1) + (SO_NAVI-3)) / (getpid());
-    printf("PID NAVE: %d, pid_di_stampa: %d\n", getpid(), pid_di_stampa);
     indice_nave = merce_nella_nave->index_nave;
 
     /*ricevo la roba dalla memoria condivisa*/

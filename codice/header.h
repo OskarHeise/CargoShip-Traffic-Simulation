@@ -24,9 +24,9 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-#define SO_NAVI 3+1 /*numero di navi*/
-#define SO_PORTI 4 /*numero di porti, metterne sempre uno in piu*/
-#define SO_MERCI 2 /*numero di tipologie di merci*/
+#define SO_NAVI 13+1 /*numero di navi*/
+#define SO_PORTI 9 /*numero di porti, metterne sempre uno in piu*/
+#define SO_MERCI 4 /*numero di tipologie di merci*/
 #define SO_SIZE 10000 /*peso massimo della merce di 10.000 Kg*/
 #define MIN_VITA 50 /*minima vita della merce*/
 #define MAX_VITA 51 /*massima vita merce*/
@@ -37,7 +37,7 @@
 #define SO_FILL 10000
 
 #define SO_LOADSPEED 3000 /*quantita di merce scambiata in tonnellate al giorno*/
-#define SO_DAYS 10 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 5 /*durata totale in giorni dell'esperimento*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
@@ -509,6 +509,8 @@ void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, stru
     for(i = 0; i < SO_PORTI; i++){
         printf("\tNumero porto: %d - Merce disponibile: %d - Merce totale spedita e ricevuta in tonnellate: %d, %d - Numero di banchine libere: %d - Lotti rimanenti: %d\n", i+1, informazioni_porto[i].merce_offerta_quantita * informazioni_porto[i].numero_lotti_merce, informazioni_porto[i].conteggio_merce_spedita_porto, informazioni_porto[i].conteggio_merce_ricevuta_porto, informazioni_porto[i].numero_banchine_libere, informazioni_porto[i].numero_lotti_merce);
     }
+
+    fflush(stdout); /*svuoto il buffer dello standard output*/
 }
 
 void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata, int* totale_merce_generata_inizialmente, int *merce_scaduta_in_nave, int *merce_scaduta_in_porto, int tappe_nei_porti){
@@ -581,8 +583,6 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
         }
     }
    
-
-
     /*print del porto che ha offerto quantita maggiore di merce*/
     if(porto_offerto_maggiore_conto == 0){
         printf("\nIl porto che ha offerto la quantita' maggiore di merce e': nessun porto ha offerto merce\n");
@@ -595,6 +595,7 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
         printf("Il porto che ha richiesto la quantita' maggiore di merce e': %d\n", porto_richiesto_maggiore);
     }
 
+    fflush(stdout); /*svuoto il buffer dello standard output*/
 }
 
 #endif
