@@ -24,9 +24,9 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-#define SO_NAVI 13+1 /*numero di navi*/
-#define SO_PORTI 9 /*numero di porti, metterne sempre uno in piu*/
-#define SO_MERCI 4 /*numero di tipologie di merci*/
+#define SO_NAVI 4+1 /*numero di navi*/
+#define SO_PORTI 4 /*numero di porti, metterne sempre uno in piu*/
+#define SO_MERCI 2 /*numero di tipologie di merci*/
 #define SO_SIZE 10000 /*peso massimo della merce di 10.000 Kg*/
 #define MIN_VITA 50 /*minima vita della merce*/
 #define MAX_VITA 51 /*massima vita merce*/
@@ -37,12 +37,13 @@
 #define SO_FILL 10000
 
 #define SO_LOADSPEED 3000 /*quantita di merce scambiata in tonnellate al giorno*/
-#define SO_DAYS 5 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 3 /*durata totale in giorni dell'esperimento*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
 #define SHM_KEY_CONTEGGIO 7845
 #define SEM_KEY 9876 
+#define MSG_KEY 2367
 
 const char *semaforo_nome = "/semaforo";
 const char *semaforo_nave_nome = "/semaforoNave";
@@ -105,6 +106,11 @@ struct struct_tempo_spostamento{
     int secondi;
     float nano_secondi;
 };
+
+struct struct_messaggio_buffer{
+    long messaggio_tipo;
+    char messaggio_testo[100];
+}messaggio;
 
 
 /*
@@ -414,7 +420,7 @@ int coda_messaggi_creazione(key_t key){
     int risultato = msgget(key, IPC_CREAT | IPC_EXCL | 0666);
 
     if(risultato == -1){
-        printf("Errore nella creazione della coda di messaggi\n");
+        /*printf("Errore nella creazione della coda di messaggi\n");*/
         exit(EXIT_FAILURE);
     }
 

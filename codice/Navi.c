@@ -6,6 +6,8 @@ pid_t pid_di_stampa;
 int indice_nave;
 int porto_piu_vicino;
 int tappe_nei_porti;
+int messaggio_id;
+
 
 int numero_offerta(){
     int i;
@@ -47,9 +49,15 @@ void *threadproc(void *arg){
     if(pid_di_stampa == 0 && (numero_giorno > SO_DAYS)){
         print_report_finale(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata, totale_merce_generata_inizialmente, merce_scaduta_in_nave, merce_scaduta_in_porto, tappe_nei_porti);
         /*printone finalone*/
-        printf("\n\nTHE END\n\n");
     }
     sleep(1);
+    /*ricevo messaggio dal porto che è tutto ok*/
+    if(pid_di_stampa == 0){
+        messaggio_id = coda_messaggi_get_id(MSG_KEY);
+        msgrcv(messaggio_id, &messaggio, sizeof(messaggio), 1, 0);
+        printf("%s\n\n", messaggio.messaggio_testo);
+        msgctl(messaggio_id, IPC_RMID, NULL);
+    }
     kill(getpid(), SIGSEGV);
     return 0;
 }
@@ -269,7 +277,6 @@ int main(int argc, char **argv){
         
         /*commentino*/
     }    
-
 
     shmdt(&shared_memory_id_porti);
     shmdt(&shared_memory_id_merce);

@@ -7,6 +7,7 @@ int main(int argc, char **argv){
     int indirizzo_attachment_porto;
     sem_t *semaforo_master;
     key_t messaggio_key;
+    int pid_di_stampa;
     int messaggio_id;
     int i;
     srand(getpid());
@@ -15,12 +16,23 @@ int main(int argc, char **argv){
     semaforo_master = sem_open(semaforo_nome, 0);
     sem_post(semaforo_master);
 
+    /*setto indici*/
+    pid_di_stampa = (getppid()) / (getpid() - SO_PORTI + 1);
+
     /*ricevo l'array dalla memoria condivisa*/
     shared_memory_id_merce = memoria_condivisa_get(SHM_KEY_MERCE, sizeof(struct struct_merce)*(SO_NAVI+SO_PORTI), SHM_RDONLY);   
     merce_nel_porto = (struct struct_merce*)malloc(sizeof(struct struct_merce)*(SO_NAVI+SO_PORTI)); 
     merce_nel_porto = (struct struct_merce*)shmat(shared_memory_id_merce, NULL, 0666|IPC_EXCL);
     shmdt(&shared_memory_id_merce);
 
+
+    /*creazione coda di messaggi*/
+    if(pid_di_stampa == 0){
+        messaggio_id = coda_messaggi_creazione(MSG_KEY);
+        strcpy(messaggio.messaggio_testo, "\n\nFINE SIMULAZIONE");
+        messaggio.messaggio_tipo = 1;
+        msgsnd(messaggio_id, &messaggio, sizeof(messaggio), 0);
+    }
     /*genero tutte le informazioni del porto*/
     do{
         porto.merce_richiesta_id = generatore_merce_richiesta_id();
