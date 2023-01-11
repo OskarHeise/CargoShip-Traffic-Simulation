@@ -12,6 +12,7 @@ int messaggio_id;
 int numero_offerta(){
     int i;
     int numero_offerta;
+
     for(i = 0; i < SO_PORTI; i++){
         if(informazioni_porto[i].merce_offerta_quantita == 0){
             numero_offerta++;
@@ -23,6 +24,7 @@ int numero_offerta(){
 int numero_richiesta(){
     int i;
     int numero_offerta;
+
     for(i = 0; i < SO_PORTI; i++){
         if(informazioni_porto[i].merce_richiesta_quantita == 0){
             numero_offerta++;
@@ -35,6 +37,7 @@ void *threadproc(void*);
 
 void *threadproc(void *arg){
     int i;
+
     while((numero_giorno < SO_DAYS+1) || (numero_offerta() == 0 && numero_richiesta() == 0)){ /*modificare poi questa condizione*/
         /*aggiornamento della data di scadenza*/
         merce_nella_nave[indice_nave].tempo_vita_merce--;
@@ -45,12 +48,14 @@ void *threadproc(void *arg){
         }
         numero_giorno++;
     }
+
     /*print report finale*/
     if(pid_di_stampa == 0 && (numero_giorno > SO_DAYS)){
         print_report_finale(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata, totale_merce_generata_inizialmente, merce_scaduta_in_nave, merce_scaduta_in_porto, tappe_nei_porti);
         /*printone finalone*/
     }
     sleep(1);
+
     /*ricevo messaggio dal porto che è tutto ok*/
     if(pid_di_stampa == 0){
         messaggio_id = coda_messaggi_get_id(MSG_KEY);
@@ -58,7 +63,9 @@ void *threadproc(void *arg){
         printf("%s\n\n", messaggio.messaggio_testo);
         msgctl(messaggio_id, IPC_RMID, NULL);
     }
+
     kill(getpid(), SIGSEGV);
+
     return 0;
 }
 
@@ -72,8 +79,6 @@ int main(int argc, char **argv){
     sem_t *semaforo_nave;
     pthread_t tid;
     key_t messaggio_key;
-    clock_t tempo_corrente;
-    clock_t tempo_iniziale;
     clock_t tempo_precedente;
     int shared_memory_id_porti;
     int i;
@@ -96,10 +101,6 @@ int main(int argc, char **argv){
     for(i = 0; i < SO_PORTI; i++){
         merce_scaduta_in_porto[i] = 0;
     }
-
-    /*imposto l'orologio*/
-    tempo_iniziale = time(NULL);
-    tempo_corrente = tempo_corrente;
 
     /*gestione semafori*/
     semaforo_master = sem_open(semaforo_nome, 0);
