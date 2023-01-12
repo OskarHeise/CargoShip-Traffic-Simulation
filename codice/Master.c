@@ -58,7 +58,6 @@ int main() {
                 indirizzo_attachment_merce = (struct struct_merce*)shmat(shared_memory_id_merce, NULL, 0);
                 indirizzo_attachment_merce[0] = vettore_di_merci[j];
                 j++;
-                /*waitpid(pid_processi, NULL, WUNTRACED);*/
                 break;
         } 
     } j = 0;
@@ -95,6 +94,7 @@ int main() {
     } j = 0;
 
 
+    /*chiusura delle risorse IPC*/
     sem_unlink(semaforo_nome);
     sem_unlink(semaforo_nave_nome);
     sem_close(semaforo_master);
