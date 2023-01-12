@@ -44,13 +44,12 @@ void stampa_risultati_finali(void);
 void stampa_risultati_giornalieri(){
     int i;
 
-    /*printf("pid processo: %d, numero giorno: %d / %d infine pid di stampa: %d\n", getpid(), numero_giorno, SO_DAYS+1, pid_di_stampa);
     /*aggiornamento della data di scadenza*/
     merce_nella_nave[indice_nave].tempo_vita_merce--;
     informazioni_porto[porto_piu_vicino].merce_offerta_tempo_vita--;
     sleep(1);
     if(pid_di_stampa == 0 && numero_giorno < SO_DAYS+1){
-        /*print_report_giornaliero(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata); /*print report*/
+        print_report_giornaliero(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata); /*print report*/
     }
     numero_giorno++;
 }
@@ -59,8 +58,8 @@ void stampa_risultati_finali(){
     int i;
 
     /*print report finale*/
-    printf("prova prova sempre fuori: %d\n", totale_merce_generata_inizialmente[0]);
-    print_report_finale(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata, totale_merce_generata_inizialmente, merce_scaduta_in_nave, merce_scaduta_in_porto, tappe_nei_porti);
+    printf("prova prova sempre fuori: %d\n", statistiche.totale_merce_generata_inizialmente[0]);
+    print_report_finale(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata, statistiche.totale_merce_generata_inizialmente, statistiche.merce_scaduta_in_nave, statistiche.merce_scaduta_in_porto, tappe_nei_porti);
 
     sleep(1);
 
@@ -96,13 +95,13 @@ int main(int argc, char **argv){
     for(i = 0; i < SO_MERCI; i++){
         somma_merci_disponibili[i] = 0;
         conteggio_merce_consegnata[i] = 0;
-        totale_merce_generata_inizialmente[i] = 0; 
+        statistiche.totale_merce_generata_inizialmente[i] = 0; 
     }
     for(i = 0; i < SO_NAVI; i++){
-        merce_scaduta_in_nave[i] = 0;
+        statistiche.merce_scaduta_in_nave[i] = 0;
     }
     for(i = 0; i < SO_PORTI; i++){
-        merce_scaduta_in_porto[i] = 0;
+        statistiche.merce_scaduta_in_porto[i] = 0;
     }
 
     /*gestione semafori*/
@@ -136,6 +135,31 @@ int main(int argc, char **argv){
     informazioni_porto = (struct struct_porto*)malloc(sizeof(struct struct_porto));
     informazioni_porto = (struct struct_porto*)shmat(shared_memory_id_porti, NULL, 0);
 
+    /*resetto gli indici*/
+    merce_nella_nave[indice_nave].dimensione_merce = -1;
+    merce_nella_nave[indice_nave].id_merce = -1;
+    merce_nella_nave[indice_nave].tempo_vita_merce = -1;
+
+    conteggio_nave[indice_nave].conteggio_navi_con_carico = 0;
+    conteggio_nave[indice_nave].conteggio_navi_senza_carico = 1;
+    conteggio_nave[indice_nave].conteggio_navi_nel_porto = 0;
+
+    /*memorizzazione valori iniziali porto per la statistica finale*/ /*sia nei porti che nelle navi*/
+    if(tappe_nei_porti == 0){
+        for(i = 0; i < SO_PORTI; i++){
+            for(j = 0; j < SO_MERCI; j++){
+                if(informazioni_porto[i].merce_offerta_id == j){
+                    statistiche.totale_merce_generata_inizialmente[j] = statistiche.totale_merce_generata_inizialmente[j] + informazioni_porto[i].merce_offerta_quantita * informazioni_porto[i].numero_lotti_merce;
+                }
+            } 
+        }
+        for(j = 0; j < SO_MERCI; j++){
+            if(merce_nella_nave[indice_nave].id_merce == j){
+                statistiche.totale_merce_generata_inizialmente[j] = statistiche.totale_merce_generata_inizialmente[j] + merce_nella_nave[indice_nave].dimensione_merce * informazioni_porto[i].numero_lotti_merce;
+            }
+        } 
+    }
+
     /*imposto il timer*/
     sleep(1);
     if(pid_di_stampa == 0){
@@ -154,16 +178,6 @@ int main(int argc, char **argv){
                 }
         }
     }
-    /*pthread_create(&tid, NULL, &threadproc, NULL);*/
-
-    /*resetto gli indici*/
-    merce_nella_nave[indice_nave].dimensione_merce = -1;
-    merce_nella_nave[indice_nave].id_merce = -1;
-    merce_nella_nave[indice_nave].tempo_vita_merce = -1;
-
-    conteggio_nave[indice_nave].conteggio_navi_con_carico = 0;
-    conteggio_nave[indice_nave].conteggio_navi_senza_carico = 1;
-    conteggio_nave[indice_nave].conteggio_navi_nel_porto = 0;
 
     /*inizio simulazione vera e propria*/
     while(numero_giorno < SO_DAYS+1){
@@ -173,7 +187,7 @@ int main(int argc, char **argv){
             for(i = 0; i < SO_PORTI; i++){
                 for(j = 0; j < SO_MERCI; j++){
                     if(merce_nella_nave[indice_nave].id_merce == j){
-                        merce_scaduta_in_nave[j] = merce_scaduta_in_nave[j] + merce_nella_nave[indice_nave].dimensione_merce * informazioni_porto[i].numero_lotti_merce;
+                        statistiche.merce_scaduta_in_nave[j] = statistiche.merce_scaduta_in_nave[j] + merce_nella_nave[indice_nave].dimensione_merce * informazioni_porto[i].numero_lotti_merce;
                     }
                 }
             }
@@ -187,7 +201,7 @@ int main(int argc, char **argv){
                 for(i = 0; i < SO_PORTI; i++){
                     for(j = 0; j < SO_MERCI; j++){
                         if(merce_nella_nave[i].id_merce == j){
-                            merce_scaduta_in_porto[j] = merce_scaduta_in_porto[j] + informazioni_porto[i].merce_offerta_quantita * informazioni_porto[i].numero_lotti_merce;
+                            statistiche.merce_scaduta_in_porto[j] = statistiche.merce_scaduta_in_porto[j] + informazioni_porto[i].merce_offerta_quantita * informazioni_porto[i].numero_lotti_merce;
                         }   
                     }
                 }
@@ -207,22 +221,6 @@ int main(int argc, char **argv){
             }
         }
         tappe_nei_porti++;
-
-        /*memorizzazione valori iniziali porto per la statistica finale*/ /*sia nei porti che nelle navi*/
-        if(tappe_nei_porti == 1){
-            for(i = 0; i < SO_PORTI; i++){
-                for(j = 0; j < SO_MERCI; j++){
-                    if(informazioni_porto[i].merce_offerta_id == j){
-                        totale_merce_generata_inizialmente[j] = totale_merce_generata_inizialmente[j] + informazioni_porto[i].merce_offerta_quantita * informazioni_porto[i].numero_lotti_merce;
-                    }
-                } 
-            }
-            for(j = 0; j < SO_MERCI; j++){
-                if(merce_nella_nave[indice_nave].id_merce == j){
-                    totale_merce_generata_inizialmente[j] = totale_merce_generata_inizialmente[j] + merce_nella_nave[indice_nave].dimensione_merce * informazioni_porto[i].numero_lotti_merce;
-                }
-            } 
-        }
 
         if(merce_nella_nave[indice_nave].dimensione_merce > 1){ 
             conteggio_nave[indice_nave].conteggio_navi_con_carico = 1;

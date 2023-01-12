@@ -38,7 +38,7 @@
 #define SO_FILL 10000
 
 #define SO_LOADSPEED 500 /*quantita di merce scambiata in tonnellate al giorno*/
-#define SO_DAYS 2 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 30 /*durata totale in giorni dell'esperimento*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
@@ -62,9 +62,6 @@ int conteggio_navi_senza_carico;
 int conteggio_navi_nel_porto;
 int somma_merci_disponibili[SO_MERCI];
 int conteggio_merce_consegnata[SO_MERCI];
-int merce_scaduta_in_nave[SO_MERCI];
-int merce_scaduta_in_porto[SO_MERCI];
-int totale_merce_generata_inizialmente[SO_MERCI];
 
 
 struct struct_merce{
@@ -115,8 +112,10 @@ struct struct_messaggio_buffer{
 }messaggio;
 
 struct struct_statistiche{
-
-};
+    int merce_scaduta_in_nave[SO_MERCI];
+    int merce_scaduta_in_porto[SO_MERCI];
+    int totale_merce_generata_inizialmente[SO_MERCI];
+}statistiche;
 
 
 /*
