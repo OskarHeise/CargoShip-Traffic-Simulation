@@ -48,7 +48,7 @@ void stampa_risultati_giornalieri(){
     merce_nella_nave[indice_nave].tempo_vita_merce--;
     informazioni_porto[porto_piu_vicino].merce_offerta_tempo_vita--;
     sleep(1);
-    if(pid_di_stampa == 0 && numero_giorno < SO_DAYS+1){
+    if(pid_di_stampa == 1 && numero_giorno < SO_DAYS+1){
         print_report_giornaliero(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata); /*print report*/
     }
     numero_giorno++;
@@ -96,7 +96,7 @@ int main(int argc, char **argv){
         conteggio_merce_consegnata[i] = 0;
         statistiche.totale_merce_generata_inizialmente[i] = 0; 
     }
-    for(i = 0; i < SO_NAVI; i++){
+    for(i = 0; i < (SO_NAVI+2); i++){
         statistiche.merce_scaduta_in_nave[i] = 0;
     }
     for(i = 0; i < SO_PORTI; i++){
@@ -109,18 +109,18 @@ int main(int argc, char **argv){
     semaforo_nave = sem_open(semaforo_nave_nome, O_CREAT, 0644, 0);
     
     /*ricevo l'array dalla memoria condivisa*/
-    shared_memory_id_merce = memoria_condivisa_get(SHM_KEY_MERCE, sizeof(struct struct_merce)*(SO_NAVI+SO_PORTI), SHM_RDONLY);   
+    shared_memory_id_merce = memoria_condivisa_get(SHM_KEY_MERCE, sizeof(struct struct_merce)*(SO_PORTI+SO_NAVI+2), SHM_RDONLY);   
     merce_nella_nave = (struct struct_merce*)malloc(sizeof(struct struct_merce)); 
     merce_nella_nave = (struct struct_merce*)shmat(shared_memory_id_merce, NULL, 0666|IPC_EXCL);
     shmdt(&shared_memory_id_merce); 
 
     /*setto indici*/
-    pid_di_stampa = ((getppid()) + (SO_PORTI+1) + (SO_NAVI-3)) / (getpid());
+    pid_di_stampa = ((getppid()) + (SO_PORTI+1)) / (getpid());
     indice_nave = merce_nella_nave->index_nave;
 
     /*ricevo la roba dalla memoria condivisa*/
-    shared_memory_id_conteggio_nave = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_conteggio_nave)*SO_NAVI, SHM_RDONLY);
-    conteggio_nave = (struct struct_conteggio_nave*)malloc(sizeof(struct struct_conteggio_nave)*SO_NAVI);
+    shared_memory_id_conteggio_nave = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_conteggio_nave)*(SO_NAVI+2), SHM_RDONLY);
+    conteggio_nave = (struct struct_conteggio_nave*)malloc(sizeof(struct struct_conteggio_nave)*(SO_NAVI+2));
     conteggio_nave = (struct struct_conteggio_nave*)shmat(shared_memory_id_conteggio_nave, NULL, 0666|IPC_EXCL);
     shmdt(&shared_memory_id_conteggio_nave);
 
@@ -161,15 +161,15 @@ int main(int argc, char **argv){
 
     /*imposto il timer*/
     sleep(1);
-    if(pid_di_stampa == 0){
-        switch(0){
+    if(pid_di_stampa == 1){
+        switch(fork()){
             case 0:
                 while((numero_giorno < SO_DAYS+1) || (numero_offerta() == 0 && numero_richiesta() == 0)){
                     stampa_risultati_giornalieri(); /*stampa report giornalieri*/
                 }
                 stampa_risultati_finali(); /*stampa risultati finali*/
             default:
-                for(i = (getpid() - SO_NAVI); i <= getpid(); i++){
+                for(i = (getpid() - (SO_NAVI+2)); i <= getpid(); i++){
                     pid_kill = i;
                     kill(pid_kill, SIGKILL);
                 }

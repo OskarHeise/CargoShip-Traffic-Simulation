@@ -25,8 +25,8 @@
 #include<fcntl.h>
 
 
-#define SO_NAVI 15+1 /*numero di navi*/
-#define SO_PORTI 6 /*numero di porti, metterne sempre uno in piu*/
+#define SO_NAVI 12 /*numero di navi*/
+#define SO_PORTI 4 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 3 /*numero di tipologie di merci*/
 #define SO_SIZE 10000 /*peso massimo della merce di 10.000 Kg*/
 #define MIN_VITA 50 /*minima vita della merce*/
@@ -38,7 +38,7 @@
 #define SO_FILL 10000
 
 #define SO_LOADSPEED 500 /*quantita di merce scambiata in tonnellate al giorno*/
-#define SO_DAYS 6 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 2 /*durata totale in giorni dell'esperimento*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
@@ -187,23 +187,23 @@ int generatore_tempo_vita_merce_offerta(int id_merce, pid_t pid_porto){
     int j;
     int risultato;
     struct struct_merce* vettore_di_merci;
-    vettore_di_merci = (struct struct_merce*)malloc(sizeof(struct struct_merce)*(SO_NAVI+SO_PORTI));
+    vettore_di_merci = (struct struct_merce*)malloc(sizeof(struct struct_merce)*(SO_PORTI+SO_NAVI+2));
     risultato = 0;
     srand(pid_porto);
 
     /*generazione delle merci e inserimento nell'array*/
-    for(i = 0; i < (SO_NAVI+SO_PORTI); i++){
+    for(i = 0; i < (SO_PORTI+SO_NAVI+2); i++){
         vettore_di_merci[i].id_merce = generatore_id_merce();
         vettore_di_merci[i].dimensione_merce = generatore_dimensione_merce();
         vettore_di_merci[i].tempo_vita_merce = generatore_tempo_vita_merce();
-        for(j = 0; j < (SO_NAVI+SO_PORTI); j++){
+        for(j = 0; j < (SO_PORTI+SO_NAVI+2); j++){
             if(vettore_di_merci[i].id_merce == vettore_di_merci[j].id_merce){
                 vettore_di_merci[i].tempo_vita_merce = vettore_di_merci[j].tempo_vita_merce;
             }
         }
     }
 
-    for(i = 0; i < (SO_NAVI+SO_PORTI); i++){
+    for(i = 0; i < (SO_PORTI+SO_NAVI+2); i++){
         if(vettore_di_merci[i].id_merce == id_merce){
             risultato = vettore_di_merci[i].tempo_vita_merce+1;
         }
@@ -221,14 +221,14 @@ struct struct_merce* generatore_array_merci(){
     int i;
     int j;
     struct struct_merce* vettore_di_merci;
-    vettore_di_merci = (struct struct_merce*)malloc(sizeof(struct struct_merce)*(SO_NAVI+SO_PORTI));
+    vettore_di_merci = (struct struct_merce*)malloc(sizeof(struct struct_merce)*(SO_PORTI+SO_NAVI+2));
 
     /*generazione delle merci e inserimento nell'array*/
-    for(i = 0; i < (SO_NAVI+SO_PORTI); i++){
+    for(i = 0; i < (SO_PORTI+SO_NAVI+2); i++){
         vettore_di_merci[i].id_merce = generatore_id_merce();
         vettore_di_merci[i].dimensione_merce = generatore_dimensione_merce();
         vettore_di_merci[i].tempo_vita_merce = generatore_tempo_vita_merce();
-        for(j = 0; j < (SO_NAVI+SO_PORTI); j++){
+        for(j = 0; j < (SO_PORTI+SO_NAVI+2); j++){
             if(vettore_di_merci[i].id_merce == vettore_di_merci[j].id_merce){
                 vettore_di_merci[i].tempo_vita_merce = vettore_di_merci[j].tempo_vita_merce;
             }
@@ -390,10 +390,10 @@ struct struct_nave* generatore_array_navi(){
     int i;
     int j;
     struct struct_nave* vettore_di_navi;
-    vettore_di_navi = (struct struct_nave*)malloc(sizeof(struct struct_nave)*SO_NAVI);
+    vettore_di_navi = (struct struct_nave*)malloc(sizeof(struct struct_nave)*(SO_NAVI+2));
 
     /*generazione delle merci e inserimento nell'array*/
-    for(i = 0; i < SO_NAVI; i++){
+    for(i = 0; i < (SO_NAVI+2); i++){
         vettore_di_navi[i].posizione_nave = generatore_posizione_iniziale_nave();
         vettore_di_navi[i].capacita_nave = generatore_capacita_nave();
         vettore_di_navi[i].velocita_nave = SO_SPEED;
@@ -504,7 +504,7 @@ void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, stru
     }
 
 
-    for(i = 0; i < SO_NAVI-1; i++){
+    for(i = 0; i < (SO_NAVI+2)-1; i++){
         conteggio_navi_con_carico_totale = conteggio_navi_con_carico_totale + conteggio_nave[i].conteggio_navi_con_carico;
         conteggio_navi_senza_carico_totale = conteggio_navi_senza_carico_totale + conteggio_nave[i].conteggio_navi_senza_carico;
         conteggio_navi_nel_porto_totale = conteggio_navi_nel_porto_totale + conteggio_nave[i].conteggio_navi_nel_porto;
@@ -558,7 +558,7 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
     porto_richiesto_maggiore_conto = 0;
     porto_richiesto_maggiore = 0;
 
-    for(i = 0; i < SO_NAVI-1; i++){
+    for(i = 0; i < (SO_NAVI+2)-1; i++){
         conteggio_navi_con_carico_totale = conteggio_navi_con_carico_totale + conteggio_nave[i].conteggio_navi_con_carico;
         conteggio_navi_senza_carico_totale = conteggio_navi_senza_carico_totale + conteggio_nave[i].conteggio_navi_senza_carico;
         conteggio_navi_nel_porto_totale = conteggio_navi_nel_porto_totale + conteggio_nave[i].conteggio_navi_nel_porto;
