@@ -25,20 +25,20 @@
 #include<fcntl.h>
 
 
-#define SO_NAVI 5+1 /*numero di navi*/
-#define SO_PORTI 4 /*numero di porti, metterne sempre uno in piu*/
+#define SO_NAVI 15+1 /*numero di navi*/
+#define SO_PORTI 6 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 3 /*numero di tipologie di merci*/
 #define SO_SIZE 10000 /*peso massimo della merce di 10.000 Kg*/
 #define MIN_VITA 50 /*minima vita della merce*/
 #define MAX_VITA 51 /*massima vita merce*/
 #define SO_LATO 10000 /*grandezza per lato della mappa di 10.000 Km*/
-#define SO_SPEED 1000 /*la velocità è di mille Kh/giorno*/
+#define SO_SPEED 3000 /*la velocità è di mille Kh/giorno*/
 #define SO_CAPACITY 1000 /*massima capacità della nave di 10.000 T*/
 #define SO_BANCHINE 3 /*numero di banchine*/
 #define SO_FILL 10000
 
 #define SO_LOADSPEED 500 /*quantita di merce scambiata in tonnellate al giorno*/
-#define SO_DAYS 30 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 6 /*durata totale in giorni dell'esperimento*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236

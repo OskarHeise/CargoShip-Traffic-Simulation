@@ -79,7 +79,6 @@ int main(int argc, char **argv){
     int porto_visitato_in_precedenza;
     int merce_richiesta_id_precedente;
     int id_merce_iniziale;
-    pid_t pid_processo_stampa;
     pthread_t tid;
     key_t messaggio_key;
     clock_t tempo_precedente;
@@ -163,14 +162,12 @@ int main(int argc, char **argv){
     /*imposto il timer*/
     sleep(1);
     if(pid_di_stampa == 0){
-        switch(pid_processo_stampa){
-            case -1: 
-                fprintf(stderr, "Errore nella fork() del Porto");
-                exit(EXIT_FAILURE);
-                break; 
+        switch(0){
             case 0:
-                while((numero_giorno < SO_DAYS+1) || (numero_offerta() == 0 && numero_richiesta() == 0)){stampa_risultati_giornalieri();}
-                stampa_risultati_finali();
+                while((numero_giorno < SO_DAYS+1) || (numero_offerta() == 0 && numero_richiesta() == 0)){
+                    stampa_risultati_giornalieri(); /*stampa report giornalieri*/
+                }
+                stampa_risultati_finali(); /*stampa risultati finali*/
             default:
                 for(i = (getpid() - SO_NAVI); i <= getpid(); i++){
                     pid_kill = i;
