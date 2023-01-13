@@ -17,20 +17,10 @@ int numero_offerta(){
     int i;
     int numero_offerta;
 
-    for(i = 0; i < SO_PORTI; i++){
-        if(informazioni_porto[i].merce_offerta_quantita == 0){
-            numero_offerta++;
-        }
-    }
-    return numero_offerta;
-}
-
-int numero_richiesta(){
-    int i;
-    int numero_offerta;
+    numero_offerta = 0;
 
     for(i = 0; i < SO_PORTI; i++){
-        if(informazioni_porto[i].merce_richiesta_quantita == 0){
+        if(informazioni_porto[i].numero_lotti_merce != 0){
             numero_offerta++;
         }
     }
@@ -58,7 +48,6 @@ void stampa_risultati_finali(){
     int i;
 
     /*print report finale*/
-    printf("prova prova sempre fuori: %d\n", statistiche.totale_merce_generata_inizialmente[0]);
     print_report_finale(conteggio_nave, merce_nella_nave, numero_giorno, informazioni_porto, somma_merci_disponibili, conteggio_merce_consegnata, statistiche.totale_merce_generata_inizialmente, statistiche.merce_scaduta_in_nave, statistiche.merce_scaduta_in_porto, tappe_nei_porti);
 
     sleep(1);
@@ -126,7 +115,7 @@ int main(int argc, char **argv){
 
     /*generazione tutte le informazioni della nave*/
     nave.posizione_nave = generatore_posizione_iniziale_nave();
-    nave.capacita_nave = SO_CAPACITY;
+    nave.capacita_nave = generatore_capacita_nave();
     nave.velocita_nave = SO_SPEED;
     
     /*ricevo l'array delle informazioni dei porti*/
@@ -164,7 +153,7 @@ int main(int argc, char **argv){
     if(pid_di_stampa == 1){
         switch(fork()){
             case 0:
-                while((numero_giorno < SO_DAYS+1) || (numero_offerta() == 0 && numero_richiesta() == 0)){
+                while((numero_giorno < SO_DAYS+1) && (numero_offerta() != 0)){
                     stampa_risultati_giornalieri(); /*stampa report giornalieri*/
                 }
                 stampa_risultati_finali(); /*stampa risultati finali*/
@@ -242,7 +231,7 @@ int main(int argc, char **argv){
                 if(merce_nella_nave[indice_nave].dimensione_merce > 0){
                     informazioni_porto[porto_piu_vicino].numero_banchine_libere--;
                     tempo_sosta_porto(merce_nella_nave[indice_nave].dimensione_merce);
-                    informazioni_porto[porto_piu_vicino].conteggio_merce_ricevuta_porto = informazioni_porto[porto_piu_vicino].conteggio_merce_ricevuta_porto + merce_nella_nave->dimensione_merce;
+                    informazioni_porto[porto_piu_vicino].conteggio_merce_ricevuta_porto = informazioni_porto[porto_piu_vicino].conteggio_merce_ricevuta_porto + merce_nella_nave[indice_nave].dimensione_merce;
                     merce_nella_nave[indice_nave].dimensione_merce = 0;
                     merce_nella_nave[indice_nave].id_merce = -1;
                     merce_nella_nave[indice_nave].tempo_vita_merce = 0;
@@ -254,7 +243,7 @@ int main(int argc, char **argv){
             if(informazioni_porto[porto_piu_vicino].numero_banchine_libere != 0){
                 tempo_sosta_porto(merce_nella_nave[indice_nave].dimensione_merce);
                 informazioni_porto[porto_piu_vicino].conteggio_merce_spedita_porto = informazioni_porto[porto_piu_vicino].conteggio_merce_spedita_porto + (informazioni_porto[porto_piu_vicino].merce_offerta_quantita / informazioni_porto[porto_piu_vicino].numero_lotti_merce);
-                merce_nella_nave[indice_nave].dimensione_merce = informazioni_porto[porto_piu_vicino].merce_offerta_quantita / informazioni_porto[porto_piu_vicino].numero_lotti_merce;
+                merce_nella_nave[indice_nave].dimensione_merce = nave.capacita_nave - (informazioni_porto[porto_piu_vicino].merce_offerta_quantita / informazioni_porto[porto_piu_vicino].numero_lotti_merce);
                 informazioni_porto[porto_piu_vicino].numero_lotti_merce--;
                 merce_nella_nave[indice_nave].id_merce = informazioni_porto[porto_piu_vicino].merce_offerta_id;
                 merce_nella_nave[indice_nave].tempo_vita_merce = generatore_tempo_vita_merce_offerta(merce_nella_nave[indice_nave].id_merce, informazioni_porto[porto_piu_vicino].pid_porto);

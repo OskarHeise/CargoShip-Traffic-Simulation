@@ -35,10 +35,10 @@
 #define SO_SPEED 3000 /*la velocità è di mille Kh/giorno*/
 #define SO_CAPACITY 1000 /*massima capacità della nave di 10.000 T*/
 #define SO_BANCHINE 3 /*numero di banchine*/
-#define SO_FILL 10000
+#define SO_FILL 1000
 
 #define SO_LOADSPEED 500 /*quantita di merce scambiata in tonnellate al giorno*/
-#define SO_DAYS 2 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 8 /*durata totale in giorni dell'esperimento*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
@@ -501,6 +501,7 @@ void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, stru
 
     for(i = 0; i < SO_PORTI; i++){
         somma_merci_disponibili[i] = 0;
+        conteggio_merce_consegnata[i] = 0;
     }
 
 
@@ -569,8 +570,6 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
         conteggio_merce_consegnata[i] = 0;
     }
 
-    printf("prova prova: %d\n", totale_merce_generata_inizialmente[0]);
-    
     printf("\n\n------------------------------------\n\n");
     printf("REPORT FINALE\n");
 
