@@ -25,20 +25,20 @@
 #include<fcntl.h>
 
 
-#define SO_NAVI 12 /*numero di navi*/
-#define SO_PORTI 4 /*numero di porti, metterne sempre uno in piu*/
+#define SO_NAVI 2 /*numero di navi*/
+#define SO_PORTI 10 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 3 /*numero di tipologie di merci*/
 #define SO_SIZE 10000 /*peso massimo della merce di 10.000 Kg*/
 #define MIN_VITA 50 /*minima vita della merce*/
 #define MAX_VITA 51 /*massima vita merce*/
 #define SO_LATO 10000 /*grandezza per lato della mappa di 10.000 Km*/
-#define SO_SPEED 3000 /*la velocità è di mille Kh/giorno*/
+#define SO_SPEED 2000 /*la velocità è di mille Kh/giorno*/
 #define SO_CAPACITY 1000 /*massima capacità della nave di 10.000 T*/
-#define SO_BANCHINE 3 /*numero di banchine*/
+#define SO_BANCHINE 1 /*numero di banchine*/
 #define SO_FILL 1000
 
 #define SO_LOADSPEED 500 /*quantita di merce scambiata in tonnellate al giorno*/
-#define SO_DAYS 8 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 3 /*durata totale in giorni dell'esperimento*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
@@ -49,7 +49,6 @@
 const char *semaforo_nome = "/semaforo";
 const char *semaforo_nave_nome = "/semaforoNave";
 
-int shared_memory_id_merce;
 int shared_memory_id_conteggio_nave;
 int numero_giorno;
 struct struct_porto porto; 
@@ -68,20 +67,14 @@ struct struct_merce{
     int id_merce; /*genero la tipologia di merce con un ID numerico*/
     int dimensione_merce; /*genero la grandezza delle merci*/
     int tempo_vita_merce; /*genero la durata di vita delle merci*/
-    int index_nave;
 };
 
 struct struct_nave{
+    int index_nave; /*indice della nave*/
     int velocita_nave; /*velocità nave*/
     double *posizione_nave; /*posizione della nave con coordinate*/
     int capacita_nave; /*capacità della nave*/
-
-};
-
-struct struct_conteggio_nave{
-    int conteggio_navi_con_carico;
-    int conteggio_navi_senza_carico;
-    int conteggio_navi_nel_porto;
+    struct struct_merce merce_nave; /*merce presente nella nave*/
 };
 
 struct struct_porto{
@@ -111,11 +104,10 @@ struct struct_messaggio_buffer{
     char messaggio_testo[100];
 }messaggio;
 
-struct struct_statistiche{
-    int merce_scaduta_in_nave[SO_MERCI];
-    int merce_scaduta_in_porto[SO_MERCI];
-    int totale_merce_generata_inizialmente[SO_MERCI];
-}statistiche;
+struct struct_controllo_scadenze{
+    int numero_navi_senza_merce;
+    int numero_porti_senza_merce;
+};
 
 
 /*
@@ -233,7 +225,6 @@ struct struct_merce* generatore_array_merci(){
                 vettore_di_merci[i].tempo_vita_merce = vettore_di_merci[j].tempo_vita_merce;
             }
         }
-        vettore_di_merci[i].index_nave = i;
     }
 
     return vettore_di_merci;
@@ -473,6 +464,33 @@ void tempo_spostamento_nave(float distanza_minima_temporanea){
     }
 }
 
+/*trova il porto più vicino e restituisce l'indice del porto in cui andare*/
+int calcolo_porto_piu_vicino(double *posizione_nave){
+    int indirizzo_attachment_shared_memory_porto;
+    struct struct_porto *shared_memory_porto;
+
+    int i;
+    int distanza_corrente;
+    int indice_minore;
+    int distanza_minore; 
+
+    distanza_minore = SO_LATO;
+    indice_minore = SO_PORTI + 10;
+
+    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto) * SO_PORTI, SHM_W);
+    shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
+
+    for(i = 0; i < SO_PORTI; i++){
+        distanza_corrente = distanza_nave_porto(posizione_nave, shared_memory_porto[i].posizione_porto_X , shared_memory_porto[i].posizione_porto_Y);
+        if(distanza_corrente < distanza_minore && shared_memory_porto[i].numero_banchine_libere > 0){
+            distanza_minore = distanza_corrente;
+            indice_minore = i;
+        }
+    }
+
+    return indice_minore;
+}
+
 /*generatore del tempo di sosta della nave nel porto*/
 void tempo_sosta_porto(int dimensione_merce){
     float tempo_sosta_porto_nanosleep;
@@ -488,7 +506,7 @@ void tempo_sosta_porto(int dimensione_merce){
 }
 
 /*stampa del report giornaliero*/
-void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata){
+/*void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata){
     int i;
     int j;
     int conteggio_navi_con_carico_totale;
@@ -536,10 +554,10 @@ void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, stru
     }
 
     fflush(stdout); /*svuoto il buffer dello standard output*/
-}
+/*}
 
 /*stampa del report finale*/
-void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata, int* totale_merce_generata_inizialmente, int *merce_scaduta_in_nave, int *merce_scaduta_in_porto, int tappe_nei_porti){
+/*void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata, int* totale_merce_generata_inizialmente, int *merce_scaduta_in_nave, int *merce_scaduta_in_porto, int tappe_nei_porti){
     int i;
     int j;
     int k;
@@ -588,7 +606,7 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
         } 
         printf("\tTipologia: %d -> \n\t\tDisponibile: %d tonnellate & Consegnata: %d tonnellate\n", i, somma_merci_disponibili[i], conteggio_merce_consegnata[i]);
         /*printing per ogni tipo di merce*/
-        printf("\t\tTonnellate di merce iniziale: %d\n", totale_merce_generata_inizialmente[i]); 
+        /*printf("\t\tTonnellate di merce iniziale: %d\n", totale_merce_generata_inizialmente[i]); 
         printf("\t\tTonnellate rimaste nel porto: %d & Scadute nel porto: %d &  Scadute nella nave: %d & Consegnata da qualche nave: %d\n", somma_merci_disponibili[i], merce_scaduta_in_porto[i], merce_scaduta_in_nave[i], conteggio_merce_consegnata[i]);
     }
     
@@ -608,10 +626,10 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
         }
     }
 
-    fflush(stdout); /*svuoto il buffer dello standard output*/
+    /*fflush(stdout); /*svuoto il buffer dello standard output*/
    
     /*print del porto che ha offerto quantita maggiore di merce*/
-    if(porto_offerto_maggiore_conto == 0){
+    /*if(porto_offerto_maggiore_conto == 0){
         printf("\nIl porto che ha offerto la quantita' maggiore di merce e': nessun porto ha offerto merce\n");
     }else{
         printf("\nIl porto che ha offerto la quantita' maggiore di merce e': %d\n", porto_offerto_maggiore);
@@ -622,7 +640,7 @@ void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct st
         printf("Il porto che ha richiesto la quantita' maggiore di merce e': %d\n", porto_richiesto_maggiore);
     }
 
-    fflush(stdout); /*svuoto il buffer dello standard output*/
-}
+    fflush(stdout); /*svuoto il buffer dello standard output*//*
+}*/
 
 #endif

@@ -1,12 +1,14 @@
 run: compile execute
 
 compile:
-	gcc -std=c89 -Wpedantic Master.c -o Master -pthread
-	gcc -std=c89 -Wpedantic Porti.c -o Porti -pthread
-	gcc -std=c89 -Wpedantic Navi.c -o Navi -pthread
+	gcc -std=c89 -Wpedantic master.c -o master -pthread
+	gcc -std=c89 -Wpedantic porti.c -o porti -pthread
+	gcc -std=c89 -Wpedantic navi.c -o navi -pthread
+	gcc -std=c89 -Wpedantic output.c -o output -pthread
+	gcc -std=c89 -Wpedantic controlli.c -o controlli -pthread
 
 execute:
-	./Master
+	./master
 
 cleanup:
 	echo cleanup 
