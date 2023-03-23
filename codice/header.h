@@ -25,29 +25,30 @@
 #include<fcntl.h>
 
 
-#define SO_NAVI 2 /*numero di navi*/
+
+#define SO_NAVI 1 /*numero di navi*/
 #define SO_PORTI 10 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 3 /*numero di tipologie di merci*/
 #define SO_SIZE 10000 /*peso massimo della merce di 10.000 Kg*/
 #define MIN_VITA 50 /*minima vita della merce*/
 #define MAX_VITA 51 /*massima vita merce*/
-#define SO_LATO 10000 /*grandezza per lato della mappa di 10.000 Km*/
-#define SO_SPEED 2000 /*la velocità è di mille Kh/giorno*/
+#define SO_LATO 1000 /*grandezza per lato della mappa di 10.000 Km*/
+#define SO_SPEED 200 /*la velocità è di mille Kh/giorno*/
 #define SO_CAPACITY 1000 /*massima capacità della nave di 10.000 T*/
 #define SO_BANCHINE 1 /*numero di banchine*/
 #define SO_FILL 1000
 
 #define SO_LOADSPEED 500 /*quantita di merce scambiata in tonnellate al giorno*/
-#define SO_DAYS 3 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 2 /*durata totale in giorni dell'esperimento*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
+#define SHM_KEY_NAVE 7896
 #define SHM_KEY_CONTEGGIO 7845
+#define SHM_KEY_SEM 6789
 #define SEM_KEY 9876 
 #define MSG_KEY 2367
-
-const char *semaforo_nome = "/semaforo";
-const char *semaforo_nave_nome = "/semaforoNave";
+#define SEM_VAL 0
 
 int shared_memory_id_conteggio_nave;
 int numero_giorno;
@@ -62,6 +63,8 @@ int conteggio_navi_nel_porto;
 int somma_merci_disponibili[SO_MERCI];
 int conteggio_merce_consegnata[SO_MERCI];
 
+const char *semaforo_nome = "/semaforo";
+const char *semaforo_nave_nome = "/semaforoNave";
 
 struct struct_merce{
     int id_merce; /*genero la tipologia di merce con un ID numerico*/
@@ -72,7 +75,8 @@ struct struct_merce{
 struct struct_nave{
     int index_nave; /*indice della nave*/
     int velocita_nave; /*velocità nave*/
-    double *posizione_nave; /*posizione della nave con coordinate*/
+    double posizione_nave_X;
+    double posizione_nave_Y;
     int capacita_nave; /*capacità della nave*/
     struct struct_merce merce_nave; /*merce presente nella nave*/
 };
@@ -281,23 +285,17 @@ double *generatore_posizione_iniziale_nave(){
 }
 
 /*calcola la distanza della nave da un porto*/
-double distanza_nave_porto(double *posizione_nave, double posizione_porto_X, double posizione_porto_Y){
-    double elemento_x1;
-    double elemento_y1;
-    double elemento_x2;
-    double elemento_y2;
+double distanza_nave_porto(double posizione_nave_X, double posizione_nave_Y, double posizione_porto_X, double posizione_porto_Y){
     double numeratore_senza_radice;
     double numeratore_con_radice;
     double risultato;
 
-    elemento_x1 = *posizione_nave;
-    posizione_nave++;
-    elemento_y1 = *posizione_nave;
-    elemento_x2 = posizione_porto_X;
-    elemento_y2 = posizione_porto_Y;
+    printf("dentrooo :   ");
 
-    numeratore_senza_radice = potenza((elemento_x2 - elemento_x1), 2) + potenza((elemento_y2 - elemento_y1), 2);
+    numeratore_senza_radice = potenza((posizione_porto_X - posizione_nave_X), 2) + potenza((posizione_porto_Y - posizione_nave_Y), 2);
     numeratore_con_radice = radice_quadrata(numeratore_senza_radice); 
+
+    printf("DISTANZA: %f, TEMPO DI ATTESA: %f\n", numeratore_con_radice, numeratore_con_radice/SO_SPEED);
 
     return numeratore_con_radice;
 }
@@ -376,23 +374,6 @@ int generatore_capacita_nave(){
     return numero_randomico;
 }
 
-/*genera casualmente un array di merci e lo restituisce*/
-struct struct_nave* generatore_array_navi(){
-    int i;
-    int j;
-    struct struct_nave* vettore_di_navi;
-    vettore_di_navi = (struct struct_nave*)malloc(sizeof(struct struct_nave)*(SO_NAVI+2));
-
-    /*generazione delle merci e inserimento nell'array*/
-    for(i = 0; i < (SO_NAVI+2); i++){
-        vettore_di_navi[i].posizione_nave = generatore_posizione_iniziale_nave();
-        vettore_di_navi[i].capacita_nave = generatore_capacita_nave();
-        vettore_di_navi[i].velocita_nave = SO_SPEED;
-    }
-
-    return vettore_di_navi;
-}
-
 /*generatore dell'id della merce offerta*/
 int generatore_merce_offerta_id(){
     int numero_randomico;
@@ -451,21 +432,25 @@ void coda_messaggi_deallocazione(int coda_messaggi_id){
 }
 
 /*restituisce il tempo totale dello spostamento della nave da nave a porto*/
-void tempo_spostamento_nave(float distanza_minima_temporanea){
+void tempo_spostamento_nave(double distanza_minima_temporanea){
     float nave_spostamento_nanosleep;
-    struct timespec remaining, request;
+    struct timespec request;
 
     nave_spostamento_nanosleep = distanza_minima_temporanea/SO_SPEED;
     request.tv_sec = (int)nave_spostamento_nanosleep;
     request.tv_nsec = (nave_spostamento_nanosleep-request.tv_sec)*1000;
 
-    if(nanosleep(&request, &remaining) < 0){
+    if(nanosleep(&request, NULL) < 0){
         perror("Errore nella nanosleep dello spostamento della nave");
     }
+
+    nave_spostamento_nanosleep = 0;
+    request.tv_sec = 0;
+    request.tv_nsec = 0;
 }
 
 /*trova il porto più vicino e restituisce l'indice del porto in cui andare*/
-int calcolo_porto_piu_vicino(double *posizione_nave){
+int calcolo_porto_piu_vicino(double posizione_nave_X, double posizione_nave_Y){
     int indirizzo_attachment_shared_memory_porto;
     struct struct_porto *shared_memory_porto;
 
@@ -481,7 +466,7 @@ int calcolo_porto_piu_vicino(double *posizione_nave){
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
 
     for(i = 0; i < SO_PORTI; i++){
-        distanza_corrente = distanza_nave_porto(posizione_nave, shared_memory_porto[i].posizione_porto_X , shared_memory_porto[i].posizione_porto_Y);
+        distanza_corrente = distanza_nave_porto(posizione_nave_X, posizione_nave_Y, shared_memory_porto[i].posizione_porto_X , shared_memory_porto[i].posizione_porto_Y);
         if(distanza_corrente < distanza_minore && shared_memory_porto[i].numero_banchine_libere > 0){
             distanza_minore = distanza_corrente;
             indice_minore = i;
@@ -504,6 +489,48 @@ void tempo_sosta_porto(int dimensione_merce){
         perror("Errore nella nanosleep dello spostamento della nave");
     }
 }
+
+/*gestione segnale*/
+void handle_child(int sig){
+    int status;
+    pid_t child;
+
+    child = waitpid(-1, &status, WNOHANG);
+    if(child > 0){
+        WEXITSTATUS(status);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*stampa del report giornaliero*/
 /*void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata){

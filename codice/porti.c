@@ -2,18 +2,18 @@
 
 int main(int argc, char **argv){
     int indirizzo_attachment_shared_memory_porto;
+    int indirizzo_attachment_shared_memory_semaforo;
     struct struct_porto *shared_memory_porto;
     double *temp_posizione_porto;
     sem_t *semaforo_master;
-    key_t messaggio_key;
+    sem_t *shared_memory_semaforo;
     int messaggio_id;
     int i;
     srand(getpid());
 
     /*gestione semafori*/
-    semaforo_master = sem_open(semaforo_nome, 0);
-    sem_post(semaforo_master);
-    
+    semaforo_master = sem_open(semaforo_nome, O_RDWR);
+
     /*genero tutte le informazioni del porto*/
     do{
         porto.merce_richiesta_id = generatore_merce_richiesta_id();
@@ -39,6 +39,8 @@ int main(int argc, char **argv){
     /*visualizzo e provo a modificare il contenuto*/
     printf("PORTO pid: %d, indice porto: %d, coordinate porto: %f  - %f\n", getpid(), getpid() - getppid()-1, porto.posizione_porto_X, porto.posizione_porto_Y);
 
+    sem_post(semaforo_master);
     sem_close(semaforo_master);
+    exit(EXIT_SUCCESS);
     return 0;
 }
