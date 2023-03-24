@@ -8,15 +8,14 @@
 #include<stdlib.h>
 #include<unistd.h>
 #include<signal.h>
+#include<sys/types.h>
 #include<time.h>
 #include<string.h>
-#include<sys/types.h>
 #include<sys/msg.h>
 #include<sys/ipc.h>
 #include<sys/shm.h>
 #include<sys/wait.h>
 #include<sys/sem.h>
-#include<signal.h>
 #include<errno.h>
 #include<pthread.h>
 #include<semaphore.h>
@@ -290,12 +289,8 @@ double distanza_nave_porto(double posizione_nave_X, double posizione_nave_Y, dou
     double numeratore_con_radice;
     double risultato;
 
-    printf("dentrooo :   ");
-
     numeratore_senza_radice = potenza((posizione_porto_X - posizione_nave_X), 2) + potenza((posizione_porto_Y - posizione_nave_Y), 2);
     numeratore_con_radice = radice_quadrata(numeratore_senza_radice); 
-
-    printf("DISTANZA: %f, TEMPO DI ATTESA: %f\n", numeratore_con_radice, numeratore_con_radice/SO_SPEED);
 
     return numeratore_con_radice;
 }
@@ -501,8 +496,10 @@ void handle_child(int sig){
     }
 }
 
-
-
+void handle_ready(int sig) {
+    /* invia il segnale SIGUSR1 al processo padre */
+    kill(getppid(), SIGUSR1);
+}
 
 
 
