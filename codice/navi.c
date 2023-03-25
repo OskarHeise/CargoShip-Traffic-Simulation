@@ -68,14 +68,11 @@ int main(){
 
         /*scelgo il porto in cui sbarcare*/
         if(tappe_nei_porti == 0 || nave.merce_nave.dimensione_merce == 0){ /*caso in cui non ha la merce*/
-            prossima_tappa = calcolo_porto_piu_vicino(nave.posizione_nave_X, nave.posizione_nave_Y); /*controllare se ci sono banchine libere*/
+            prossima_tappa = ricerca_binaria(shared_memory_porto, 0, SO_PORTI - 1, nave.posizione_nave_X, nave.posizione_nave_Y);
+            printf("prossima tappa: %d\n", prossima_tappa);
             tappe_nei_porti++;
-        }else{
-            for(i = 0; i < SO_PORTI; i++){
-                if(nave.merce_nave.id_merce == shared_memory_porto[i].merce_richiesta_id && shared_memory_porto[i].numero_banchine_libere > 0){ /*caso in cui cerca la roba*/
-                    prossima_tappa = i;
-                }
-            }
+        }else {
+            prossima_tappa = ricerca_binaria_porto(nave.merce_nave.id_merce, shared_memory_porto, 0, SO_PORTI-1);
         }
 
         /*gestire il caso in cui ha più di una tappa e non trova mai un porto in cui sbarcare, provare con 3 navi e 1 porto*/

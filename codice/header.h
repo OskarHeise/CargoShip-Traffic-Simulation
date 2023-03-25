@@ -9,6 +9,7 @@
 #include<unistd.h>
 #include<signal.h>
 #include<sys/types.h>
+#include<math.h>
 #include<time.h>
 #include<string.h>
 #include<sys/msg.h>
@@ -25,8 +26,8 @@
 
 
 
-#define SO_NAVI 1 /*numero di navi*/
-#define SO_PORTI 10 /*numero di porti, metterne sempre uno in piu*/
+#define SO_NAVI 10 /*numero di navi*/
+#define SO_PORTI 30 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 3 /*numero di tipologie di merci*/
 #define SO_SIZE 10000 /*peso massimo della merce di 10.000 Kg*/
 #define MIN_VITA 50 /*minima vita della merce*/
@@ -34,11 +35,11 @@
 #define SO_LATO 1000 /*grandezza per lato della mappa di 10.000 Km*/
 #define SO_SPEED 200 /*la velocità è di mille Kh/giorno*/
 #define SO_CAPACITY 1000 /*massima capacità della nave di 10.000 T*/
-#define SO_BANCHINE 1 /*numero di banchine*/
+#define SO_BANCHINE 3 /*numero di banchine*/
 #define SO_FILL 1000
 
 #define SO_LOADSPEED 500 /*quantita di merce scambiata in tonnellate al giorno*/
-#define SO_DAYS 2 /*durata totale in giorni dell'esperimento*/
+#define SO_DAYS 5 /*durata totale in giorni dell'esperimento*/
 
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
@@ -150,30 +151,27 @@ double radice_quadrata(double n){
 
 /*genera casualmente l'ID della merce*/
 int generatore_id_merce(){
-    int numero_randomico;
-    numero_randomico = rand()%SO_MERCI+1;
-    return numero_randomico;
+    if(SO_MERCI == 1){
+        return 1;
+    }else{
+        return rand()%SO_MERCI+1;
+
+    }
 }
 
 /*genera casualmente dimensione esatta delle merci*/
 int generatore_dimensione_merce(){
-    int numero_randomico;
-    numero_randomico = rand()%(SO_SIZE -1 + 1) + 1;
-    return numero_randomico;
+    return rand()%(SO_SIZE -1 + 1) + 1;;
 }
 
 /*genera casualmente il tempo di vita delle merci*/
-int generatore_tempo_vita_merce(){
-    int numero_randomico;
-    numero_randomico = rand()%(MAX_VITA - MIN_VITA +1) + MIN_VITA;
-    return numero_randomico+2;
+int generatore_tempo_vita_merce(){ 
+    return rand()%(MAX_VITA - MIN_VITA +1) + MIN_VITA;;
 }
 
 /*genero casualmente il numero di lotti di merce*/
 int generatore_lotti_merce(){
-    int numero_randomico;
-    numero_randomico = rand()%10+2;
-    return numero_randomico;
+    return rand()%10+2;
 }
 
 /*genero casualmente il tempo di vita della merce offerta*/
@@ -285,14 +283,7 @@ double *generatore_posizione_iniziale_nave(){
 
 /*calcola la distanza della nave da un porto*/
 double distanza_nave_porto(double posizione_nave_X, double posizione_nave_Y, double posizione_porto_X, double posizione_porto_Y){
-    double numeratore_senza_radice;
-    double numeratore_con_radice;
-    double risultato;
-
-    numeratore_senza_radice = potenza((posizione_porto_X - posizione_nave_X), 2) + potenza((posizione_porto_Y - posizione_nave_Y), 2);
-    numeratore_con_radice = radice_quadrata(numeratore_senza_radice); 
-
-    return numeratore_con_radice;
+    return hypot(posizione_porto_X - posizione_nave_X, posizione_porto_Y - posizione_nave_Y);
 }
 
 /*restituisce lo spostamento della nave giorno per giorno*/
@@ -444,32 +435,41 @@ void tempo_spostamento_nave(double distanza_minima_temporanea){
     request.tv_nsec = 0;
 }
 
-/*trova il porto più vicino e restituisce l'indice del porto in cui andare*/
-int calcolo_porto_piu_vicino(double posizione_nave_X, double posizione_nave_Y){
-    int indirizzo_attachment_shared_memory_porto;
-    struct struct_porto *shared_memory_porto;
+int ricerca_binaria(struct struct_porto *shared_memory_porto, int inizio, int fine, double posizione_nave_X, double posizione_nave_Y){
+    int indice_medio, distanza_corrente, indice_sinistra, indice_destra;
 
-    int i;
-    int distanza_corrente;
-    int indice_minore;
-    int distanza_minore; 
-
-    distanza_minore = SO_LATO;
-    indice_minore = SO_PORTI + 10;
-
-    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto) * SO_PORTI, SHM_W);
-    shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
-
-    for(i = 0; i < SO_PORTI; i++){
-        distanza_corrente = distanza_nave_porto(posizione_nave_X, posizione_nave_Y, shared_memory_porto[i].posizione_porto_X , shared_memory_porto[i].posizione_porto_Y);
-        if(distanza_corrente < distanza_minore && shared_memory_porto[i].numero_banchine_libere > 0){
-            distanza_minore = distanza_corrente;
-            indice_minore = i;
-        }
+    if(fine < inizio){
+        return SO_PORTI + 10;
     }
 
-    return indice_minore;
+    indice_medio = (inizio + fine) / 2;
+    if(shared_memory_porto[indice_medio].numero_banchine_libere == 0){
+        if(indice_medio == inizio){
+            return ricerca_binaria(shared_memory_porto, indice_medio + 1, fine, posizione_nave_X, posizione_nave_Y);
+        } else{
+            return ricerca_binaria(shared_memory_porto, inizio, indice_medio - 1, posizione_nave_X, posizione_nave_Y);
+        }
+    } else{
+        distanza_corrente = distanza_nave_porto(posizione_nave_X, posizione_nave_Y, shared_memory_porto[indice_medio].posizione_porto_X, shared_memory_porto[indice_medio].posizione_porto_Y);
+        indice_sinistra = ricerca_binaria(shared_memory_porto, inizio, indice_medio - 1, posizione_nave_X, posizione_nave_Y);
+        indice_destra = ricerca_binaria(shared_memory_porto, indice_medio + 1, fine, posizione_nave_X, posizione_nave_Y);
+
+        if(distanza_corrente <= distanza_nave_porto(posizione_nave_X, posizione_nave_Y, shared_memory_porto[indice_sinistra].posizione_porto_X, shared_memory_porto[indice_sinistra].posizione_porto_Y) &&
+           distanza_corrente <= distanza_nave_porto(posizione_nave_X, posizione_nave_Y, shared_memory_porto[indice_destra].posizione_porto_X, shared_memory_porto[indice_destra].posizione_porto_Y)){
+            return indice_medio;
+        } else if(distanza_nave_porto(posizione_nave_X, posizione_nave_Y, shared_memory_porto[indice_sinistra].posizione_porto_X, shared_memory_porto[indice_sinistra].posizione_porto_Y) <=
+                  distanza_nave_porto(posizione_nave_X, posizione_nave_Y, shared_memory_porto[indice_destra].posizione_porto_X, shared_memory_porto[indice_destra].posizione_porto_Y)){
+            return indice_sinistra;
+        } else{
+            return indice_destra;
+        }
+    }
 }
+
+int calcolo_porto_piu_vicino(double posizione_nave_X, double posizione_nave_Y, struct struct_porto *shared_memory_porto){
+    return ricerca_binaria(shared_memory_porto, 0, SO_PORTI - 1, posizione_nave_X, posizione_nave_Y);
+}
+
 
 /*generatore del tempo di sosta della nave nel porto*/
 void tempo_sosta_porto(int dimensione_merce){
@@ -502,7 +502,19 @@ void handle_ready(int sig) {
 }
 
 
-
+int ricerca_binaria_porto(int id_merce, struct struct_porto *shared_memory_porto, int start, int end){
+    if (end >= start){
+        int mid = start + (end - start) / 2;
+        if (shared_memory_porto[mid].merce_richiesta_id == id_merce && shared_memory_porto[mid].numero_banchine_libere > 0){
+            return mid;
+        }
+        if (shared_memory_porto[mid].merce_richiesta_id > id_merce){
+            return ricerca_binaria_porto(id_merce, shared_memory_porto, start, mid - 1);
+        }
+        return ricerca_binaria_porto(id_merce, shared_memory_porto, mid + 1, end);
+    }
+    return -1;
+}
 
 
 
