@@ -5,9 +5,11 @@ int main(){
     int indirizzo_attachment_shared_memory_porto;
     int indirizzo_attachment_shared_memory_scadenze;
     int indirizzo_attachment_shared_memory_nave;
+    int indirizzo_attachment_shared_memory_giorni;
     struct struct_porto *shared_memory_porto;
     struct struct_controllo_scadenze *shared_memory_scadenze;
     struct struct_nave *shared_memory_nave;
+    struct struct_giorni *shared_memory_giorni;
     char **args;
     int pid_di_stampa;
     double *coordinate_temporanee;
@@ -45,6 +47,8 @@ int main(){
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
     indirizzo_attachment_shared_memory_nave = memoria_condivisa_get(SHM_KEY_NAVE,  sizeof(struct struct_nave) * SO_NAVI, SHM_W);
     shared_memory_nave = (struct struct_nave*)shmat(indirizzo_attachment_shared_memory_nave, NULL, 0);
+    indirizzo_attachment_shared_memory_giorni = memoria_condivisa_get(SHM_KEY_GIORNO,  sizeof(struct struct_giorni), SHM_W);
+    shared_memory_giorni = (struct struct_giorni*)shmat(indirizzo_attachment_shared_memory_giorni, NULL, 0);
 
     /*salvo lo status della nave*/
     shared_memory_nave[getpid() - getppid() - SO_PORTI - 1] = nave; 
@@ -55,7 +59,8 @@ int main(){
     pause();
     
     /*inizio la simulzione vera e propria*/
-    while(1){
+    while(shared_memory_giorni->giorni < SO_DAYS){
+        printf("indice: %d, shared_memory_giorni->giorni: %d\n", getpid() - getppid() - SO_PORTI - 1, shared_memory_giorni->giorni);
         prossima_tappa = -1;
         
         /*controllo se sono finite le merci nelle navi e/o nei porti*/
@@ -69,7 +74,6 @@ int main(){
         /*scelgo il porto in cui sbarcare*/
         if(tappe_nei_porti == 0 || nave.merce_nave.dimensione_merce == 0){ /*caso in cui non ha la merce*/
             prossima_tappa = ricerca_binaria(shared_memory_porto, 0, SO_PORTI - 1, nave.posizione_nave_X, nave.posizione_nave_Y);
-            printf("prossima tappa: %d\n", prossima_tappa);
             tappe_nei_porti++;
         }else {
             prossima_tappa = ricerca_binaria_porto(nave.merce_nave.id_merce, shared_memory_porto, 0, SO_PORTI-1);
@@ -85,10 +89,8 @@ int main(){
         /*ora distinguo i casi in cui trova il porto rispetto a quando non lo trova*/
         if(prossima_tappa <= -1){
             /*significa che non ho trovato il porto, quindi non faccio niente*/
-            printf("Sto fermo con nave numero %d che va al porto %d........\n", getpid() - getppid() - SO_PORTI - 1, prossima_tappa);
             sleep(1);
         }else if(prossima_tappa > -1){
-            printf("Sono dentro con nave numero %d che va al porto %d........\n", getpid() - getppid() - SO_PORTI - 1, prossima_tappa);
             /*significa che ho trovato un porto disponibile, e mi dirigo verso di esso*/
 
             /*per prima cosa aggiorno il numero di banchine disponibili*/

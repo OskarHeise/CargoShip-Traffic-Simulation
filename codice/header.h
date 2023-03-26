@@ -25,9 +25,8 @@
 #include<fcntl.h>
 
 
-
-#define SO_NAVI 10 /*numero di navi*/
-#define SO_PORTI 30 /*numero di porti, metterne sempre uno in piu*/
+#define SO_NAVI 1000 /*numero di navi*/
+#define SO_PORTI 3000 /*numero di porti, metterne sempre uno in piu*/
 #define SO_MERCI 3 /*numero di tipologie di merci*/
 #define SO_SIZE 10000 /*peso massimo della merce di 10.000 Kg*/
 #define MIN_VITA 50 /*minima vita della merce*/
@@ -46,6 +45,7 @@
 #define SHM_KEY_NAVE 7896
 #define SHM_KEY_CONTEGGIO 7845
 #define SHM_KEY_SEM 6789
+#define SHM_KEY_GIORNO 2002
 #define SEM_KEY 9876 
 #define MSG_KEY 2367
 #define SEM_VAL 0
@@ -111,6 +111,10 @@ struct struct_messaggio_buffer{
 struct struct_controllo_scadenze{
     int numero_navi_senza_merce;
     int numero_porti_senza_merce;
+};
+
+struct struct_giorni{
+    int giorni;
 };
 
 

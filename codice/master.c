@@ -10,6 +10,7 @@ int main() {
     int indirizzo_attachment_shared_memory_porto;
     int indirizzo_attachment_shared_memory_scadenze;
     int indirizzo_attachment_shared_memory_nave;
+    int indirizzo_attachment_shared_memory_giorni;
     int i;
     char c;
     char **args;
@@ -26,6 +27,7 @@ int main() {
     indirizzo_attachment_shared_memory_nave = memoria_condivisa_creazione(SHM_KEY_NAVE,  sizeof(struct struct_nave) * SO_NAVI);
     indirizzo_attachment_shared_memory_porto = memoria_condivisa_creazione(SHM_KEY_PORTO, sizeof(struct struct_porto) * SO_PORTI);
     indirizzo_attachment_shared_memory_scadenze = memoria_condivisa_creazione(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze));
+    indirizzo_attachment_shared_memory_giorni = memoria_condivisa_creazione(SHM_KEY_GIORNO,  sizeof(int));
 
     printf("\n\n\n");    
 
@@ -75,6 +77,19 @@ int main() {
         kill(pid_figli[i], SIGUSR1);
     }
 
+    /*apro il processo ouput.c*/
+    switch (pid_processi = fork()){
+        case -1:
+            fprintf(stderr, "Errore nella fork() della Nave");
+            exit(EXIT_FAILURE);
+            break;    
+        case 0: 
+            execvp("./output", args);
+            break;            
+        default: 
+            break;
+    }
+
     /* aspetta che tutti i processi figli terminino */
     for (i = 0; i < SO_NAVI; i++) {
         wait(NULL);
@@ -84,6 +99,7 @@ int main() {
     sem_close(semaforo_master);
     sem_unlink(semaforo_nome);
     sem_unlink(semaforo_nave_nome);
+    memoria_condivisa_deallocazione(indirizzo_attachment_shared_memory_giorni);
     memoria_condivisa_deallocazione(indirizzo_attachment_shared_memory_nave);
     memoria_condivisa_deallocazione(indirizzo_attachment_shared_memory_porto);
     memoria_condivisa_deallocazione(indirizzo_attachment_shared_memory_scadenze);
