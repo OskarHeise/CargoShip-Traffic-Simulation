@@ -24,22 +24,6 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
-
-#define SO_NAVI 1000 /*numero di navi*/
-#define SO_PORTI 3000 /*numero di porti, metterne sempre uno in piu*/
-#define SO_MERCI 3 /*numero di tipologie di merci*/
-#define SO_SIZE 10000 /*peso massimo della merce di 10.000 Kg*/
-#define MIN_VITA 50 /*minima vita della merce*/
-#define MAX_VITA 51 /*massima vita merce*/
-#define SO_LATO 1000 /*grandezza per lato della mappa di 10.000 Km*/
-#define SO_SPEED 200 /*la velocità è di mille Kh/giorno*/
-#define SO_CAPACITY 1000 /*massima capacità della nave di 10.000 T*/
-#define SO_BANCHINE 3 /*numero di banchine*/
-#define SO_FILL 1000
-
-#define SO_LOADSPEED 500 /*quantita di merce scambiata in tonnellate al giorno*/
-#define SO_DAYS 5 /*durata totale in giorni dell'esperimento*/
-
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
 #define SHM_KEY_NAVE 7896
@@ -60,8 +44,6 @@ int millisecondi;
 int conteggio_navi_con_carico;
 int conteggio_navi_senza_carico;
 int conteggio_navi_nel_porto;
-int somma_merci_disponibili[SO_MERCI];
-int conteggio_merce_consegnata[SO_MERCI];
 
 const char *semaforo_nome = "/semaforo";
 const char *semaforo_nave_nome = "/semaforoNave";
@@ -108,9 +90,18 @@ struct struct_messaggio_buffer{
     char messaggio_testo[100];
 }messaggio;
 
-struct struct_controllo_scadenze{
+struct struct_controllo_scadenze_statistiche{
     int numero_navi_senza_merce;
     int numero_porti_senza_merce;
+    int merce_consegnata[100];
+
+    int navi_nel_porto;
+    int navi_con_carico;
+    int navi_senza_carico;
+
+    int merce_generata_inizialmente[100];
+    int merce_scaduta_porto[100];
+    int merce_scaduta_nave[100];
 };
 
 struct struct_giorni{
@@ -155,22 +146,86 @@ double radice_quadrata(double n){
 
 /*genera casualmente l'ID della merce*/
 int generatore_id_merce(){
-    if(SO_MERCI == 1){
-        return 1;
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_merci;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_MERCI") == 0) {
+            so_merci = value;
+        }
+    }
+
+    fclose(config_file);
+
+    if(so_merci == 1){
+        return 0;
     }else{
-        return rand()%SO_MERCI+1;
+        return rand()%so_merci;
 
     }
 }
 
 /*genera casualmente dimensione esatta delle merci*/
 int generatore_dimensione_merce(){
-    return rand()%(SO_SIZE -1 + 1) + 1;;
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_size;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_SIZE") == 0) {
+            so_size = value;
+        }
+    }
+
+    fclose(config_file);
+
+    return rand()%(so_size -1 + 1) + 1;;
 }
 
 /*genera casualmente il tempo di vita delle merci*/
 int generatore_tempo_vita_merce(){ 
-    return rand()%(MAX_VITA - MIN_VITA +1) + MIN_VITA;;
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int max_vita;
+    int min_vita;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "MAX_VITA") == 0) {
+            max_vita = value;
+        }
+        if (strcmp(name, "MIN_VITA") == 0) {
+            min_vita = value;
+        }
+    }
+
+    fclose(config_file);
+
+    return rand()%(max_vita - min_vita +1) + min_vita;
 }
 
 /*genero casualmente il numero di lotti di merce*/
@@ -184,23 +239,48 @@ int generatore_tempo_vita_merce_offerta(int id_merce, pid_t pid_porto){
     int j;
     int risultato;
     struct struct_merce* vettore_di_merci;
-    vettore_di_merci = (struct struct_merce*)malloc(sizeof(struct struct_merce)*(SO_PORTI+SO_NAVI+2));
+
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_navi;
+    int so_porti;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_NAVI") == 0) {
+            so_navi = value;
+        }
+        if (strcmp(name, "SO_PORTI") == 0) {
+            so_porti = value;
+        }
+    }
+
+    fclose(config_file);
+
+
+    vettore_di_merci = (struct struct_merce*)malloc(sizeof(struct struct_merce)*(so_porti+so_navi));
     risultato = 0;
     srand(pid_porto);
 
     /*generazione delle merci e inserimento nell'array*/
-    for(i = 0; i < (SO_PORTI+SO_NAVI+2); i++){
+    for(i = 0; i < (so_porti+so_navi); i++){
         vettore_di_merci[i].id_merce = generatore_id_merce();
         vettore_di_merci[i].dimensione_merce = generatore_dimensione_merce();
         vettore_di_merci[i].tempo_vita_merce = generatore_tempo_vita_merce();
-        for(j = 0; j < (SO_PORTI+SO_NAVI+2); j++){
+        for(j = 0; j < (so_porti+so_navi); j++){
             if(vettore_di_merci[i].id_merce == vettore_di_merci[j].id_merce){
                 vettore_di_merci[i].tempo_vita_merce = vettore_di_merci[j].tempo_vita_merce;
             }
         }
     }
 
-    for(i = 0; i < (SO_PORTI+SO_NAVI+2); i++){
+    for(i = 0; i < (so_porti+so_navi); i++){
         if(vettore_di_merci[i].id_merce == id_merce){
             risultato = vettore_di_merci[i].tempo_vita_merce+1;
         }
@@ -211,28 +291,6 @@ int generatore_tempo_vita_merce_offerta(int id_merce, pid_t pid_porto){
     }else{
         return risultato;
     }
-}
-
-/*genera casualmente un array di merci e lo restituisce*/
-struct struct_merce* generatore_array_merci(){
-    int i;
-    int j;
-    struct struct_merce* vettore_di_merci;
-    vettore_di_merci = (struct struct_merce*)malloc(sizeof(struct struct_merce)*(SO_PORTI+SO_NAVI+2));
-
-    /*generazione delle merci e inserimento nell'array*/
-    for(i = 0; i < (SO_PORTI+SO_NAVI+2); i++){
-        vettore_di_merci[i].id_merce = generatore_id_merce();
-        vettore_di_merci[i].dimensione_merce = generatore_dimensione_merce();
-        vettore_di_merci[i].tempo_vita_merce = generatore_tempo_vita_merce();
-        for(j = 0; j < (SO_PORTI+SO_NAVI+2); j++){
-            if(vettore_di_merci[i].id_merce == vettore_di_merci[j].id_merce){
-                vettore_di_merci[i].tempo_vita_merce = vettore_di_merci[j].tempo_vita_merce;
-            }
-        }
-    }
-
-    return vettore_di_merci;
 }
 
 /*restituisco il tempo di occupazione della banchina*/
@@ -279,9 +337,29 @@ void memoria_condivisa_deallocazione(int id){
 /*genera casualmente la posizione iniziale della nave, e restituisce un puntatore di array*/
 double *generatore_posizione_iniziale_nave(){
     double *coordinate_generate;
+
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_lato;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_LATO") == 0) {
+            so_lato = value;
+        }
+    }
+
+    fclose(config_file);
+
     coordinate_generate = malloc(16);
-    coordinate_generate[0] = rand()%(SO_LATO - 0 + 1) + 0;
-    coordinate_generate[1] = rand()%(SO_LATO - 0 + 1) + 0;
+    coordinate_generate[0] = rand()%(so_lato - 0 + 1) + 0;
+    coordinate_generate[1] = rand()%(so_lato - 0 + 1) + 0;
     return coordinate_generate;
 }
 
@@ -300,6 +378,25 @@ double spostamento_nave(double *posizione_nave, double posizione_porto_X, double
     double numeratore_con_radice;
     double risultato;
 
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_speed;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_SPEED") == 0) {
+            so_speed = value;
+        }
+    }
+
+    fclose(config_file);
+
     elemento_x1 = *posizione_nave;
     posizione_nave++;
     elemento_y1 = *posizione_nave;
@@ -308,7 +405,7 @@ double spostamento_nave(double *posizione_nave, double posizione_porto_X, double
 
     numeratore_senza_radice = potenza((elemento_x2 - elemento_x1), 2) + potenza((elemento_y2 - elemento_y1), 2);
     numeratore_con_radice = radice_quadrata(numeratore_senza_radice);  
-    risultato = (double)numeratore_con_radice/(double)SO_SPEED;
+    risultato = (double)numeratore_con_radice/(double)so_speed;
     return risultato;
 }
 
@@ -316,8 +413,27 @@ double spostamento_nave(double *posizione_nave, double posizione_porto_X, double
 double *generatore_posizione_iniziale_porto(pid_t pid, pid_t parent_pid){  
     double *coordinate_generate;
     int dato;
-    coordinate_generate = malloc(sizeof(double)*2);
 
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_lato;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_LATO") == 0) {
+            so_lato = value;
+        }
+    }
+
+    fclose(config_file);
+
+    coordinate_generate = malloc(sizeof(double)*2);
     dato = pid % 4;
 
     if((pid - parent_pid) <= 4){
@@ -327,23 +443,23 @@ double *generatore_posizione_iniziale_porto(pid_t pid, pid_t parent_pid){
                 coordinate_generate[1] = 0;
                 break;
             case 1:
-                coordinate_generate[0] = SO_LATO;
+                coordinate_generate[0] = so_lato;
                 coordinate_generate[1] = 0;
                 break;
             case 2:
-                coordinate_generate[0] = SO_LATO;
-                coordinate_generate[1] = SO_LATO;
+                coordinate_generate[0] = so_lato;
+                coordinate_generate[1] = so_lato;
                 break;
             case 3:
                 coordinate_generate[0] = 0;
-                coordinate_generate[1] = SO_LATO;
+                coordinate_generate[1] = so_lato;
                 break;
             default:
                 break;
         }
     }else{
-        coordinate_generate[0] = rand()%(SO_LATO - 0 + 1) + 0;
-        coordinate_generate[1] = rand()%(SO_LATO - 0 + 1) + 0;
+        coordinate_generate[0] = rand()%(so_lato - 0 + 1) + 0;
+        coordinate_generate[1] = rand()%(so_lato - 0 + 1) + 0;
     }
     
     
@@ -353,42 +469,174 @@ double *generatore_posizione_iniziale_porto(pid_t pid, pid_t parent_pid){
 /*generatore del numero di banchine del porto*/
 double generatore_banchine_porto(){
     int numero_randomico;
-    numero_randomico = rand()%SO_BANCHINE+2;
+
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_banchine;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_BANCHINE") == 0) {
+            so_banchine = value;
+        }
+    }
+
+    fclose(config_file);
+
+    numero_randomico = rand()%so_banchine+2;
     return numero_randomico;
 }
 
 /*generatore della capacita massima delle navi*/
 int generatore_capacita_nave(){
     int numero_randomico;
-    numero_randomico = rand()%SO_CAPACITY;
+
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_capacity;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_CAPACITY") == 0) {
+            so_capacity = value;
+        }
+    }
+
+    fclose(config_file);
+
+    numero_randomico = rand()%so_capacity;
     return numero_randomico;
 }
 
 /*generatore dell'id della merce offerta*/
 int generatore_merce_offerta_id(){
-    int numero_randomico;
-    numero_randomico = rand()%SO_MERCI;
-    return numero_randomico;
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_merci;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_MERCI") == 0) {
+            so_merci = value;
+        }
+    }
+
+    fclose(config_file);
+
+    if(so_merci == 1){
+        return 0;
+    }else{
+        return rand()%so_merci;
+    }
 }
 
 /*generatore della quantita della merce offerta*/
 int generatore_merce_offerta_quantita(int merce_richiesta_quantita){
     int numero_randomico;
-    numero_randomico = SO_FILL - merce_richiesta_quantita;
+
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_fill;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_FILL") == 0) {
+            so_fill = value;
+        }
+    }
+
+    fclose(config_file);
+
+    numero_randomico = so_fill - merce_richiesta_quantita;
     return numero_randomico;
 }
 
 /*generatore dell'id della merce richiesta*/
 int generatore_merce_richiesta_id(){
     int numero_randomico;
-    numero_randomico = rand()%SO_MERCI;
-    return numero_randomico;
+
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_merci;
+
+    so_merci = 1;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_MERCI") == 0) {
+            so_merci = value;
+        }
+    }
+
+    fclose(config_file);
+
+    if(so_merci == 1){
+        return 0;
+    }else{
+        return rand()%so_merci;
+    }
 }
 
 /*generatore della quantita della merce richiesta*/
 int generatore_merce_richiesta_quantita(){
     int numero_randomico;
-    numero_randomico = rand()%SO_FILL;
+
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_fill;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_FILL") == 0) {
+            so_fill = value;
+        }
+    }
+
+    fclose(config_file);
+
+    numero_randomico = rand()%so_fill;
     return numero_randomico;
 }
 
@@ -405,7 +653,8 @@ int coda_messaggi_creazione(key_t key){
 }
 
 int coda_messaggi_get_id(key_t key){
-    int risultato = msgget(key, 0666);
+    int risultato;
+    risultato = msgget(key, 0666);
 
     if(risultato == -1){
         printf("Errore, non esiste una coda di messaggi associata alla key\n");
@@ -426,7 +675,27 @@ void tempo_spostamento_nave(double distanza_minima_temporanea){
     float nave_spostamento_nanosleep;
     struct timespec request;
 
-    nave_spostamento_nanosleep = distanza_minima_temporanea/SO_SPEED;
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_speed;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_SPEED") == 0) {
+            so_speed = value;
+        }
+    }
+
+    fclose(config_file);
+
+    nave_spostamento_nanosleep = distanza_minima_temporanea/so_speed;
     request.tv_sec = (int)nave_spostamento_nanosleep;
     request.tv_nsec = (nave_spostamento_nanosleep-request.tv_sec)*1000;
 
@@ -442,8 +711,28 @@ void tempo_spostamento_nave(double distanza_minima_temporanea){
 int ricerca_binaria(struct struct_porto *shared_memory_porto, int inizio, int fine, double posizione_nave_X, double posizione_nave_Y){
     int indice_medio, distanza_corrente, indice_sinistra, indice_destra;
 
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_porti;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_PORTI") == 0) {
+            so_porti = value;
+        }
+    }
+
+    fclose(config_file);
+
     if(fine < inizio){
-        return SO_PORTI + 10;
+        return so_porti + 10;
     }
 
     indice_medio = (inizio + fine) / 2;
@@ -471,7 +760,27 @@ int ricerca_binaria(struct struct_porto *shared_memory_porto, int inizio, int fi
 }
 
 int calcolo_porto_piu_vicino(double posizione_nave_X, double posizione_nave_Y, struct struct_porto *shared_memory_porto){
-    return ricerca_binaria(shared_memory_porto, 0, SO_PORTI - 1, posizione_nave_X, posizione_nave_Y);
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_porti;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_PORTI") == 0) {
+            so_porti = value;
+        }
+    }
+
+    fclose(config_file);
+
+    return ricerca_binaria(shared_memory_porto, 0, so_porti - 1, posizione_nave_X, posizione_nave_Y);
 }
 
 
@@ -480,7 +789,27 @@ void tempo_sosta_porto(int dimensione_merce){
     float tempo_sosta_porto_nanosleep;
     struct timespec remaining, request;
 
-    tempo_sosta_porto_nanosleep = dimensione_merce/SO_SPEED;
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_speed;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_SPEED") == 0) {
+            so_speed = value;
+        }
+    }
+
+    fclose(config_file);
+
+    tempo_sosta_porto_nanosleep = dimensione_merce/so_speed;
     request.tv_sec = (int)tempo_sosta_porto_nanosleep;
     request.tv_nsec = (tempo_sosta_porto_nanosleep-request.tv_sec)*1000;
 
@@ -506,18 +835,35 @@ void handle_ready(int sig) {
 }
 
 
-int ricerca_binaria_porto(int id_merce, struct struct_porto *shared_memory_porto, int start, int end){
-    if (end >= start){
-        int mid = start + (end - start) / 2;
-        if (shared_memory_porto[mid].merce_richiesta_id == id_merce && shared_memory_porto[mid].numero_banchine_libere > 0){
-            return mid;
+int ricerca_binaria_porto(int id_merce, struct struct_porto *shared_memory_porto, int num_porti, int id_porto_precedente){
+    int index_porto_scelto = -1;
+    int num_porti_validi = 0;
+    int i;
+    int index_porto_casuale;
+    int indici_porti_validi[1000];
+
+    /* Trova tutti i porti validi */
+    for (i = 0; i < num_porti; i++){
+        /* Verifica che il porto richieda la tipologia di merce cercata */
+        if (shared_memory_porto[i].merce_richiesta_id == id_merce && shared_memory_porto[i].numero_banchine_libere > 0){
+            /* Verifica che il porto non sia lo stesso della volta precedente */
+            if (i != id_porto_precedente){
+                /* Verifica se ci sono ancora lotti di merce disponibili in questo porto */
+                if (shared_memory_porto[i].numero_lotti_merce > 0){
+                    indici_porti_validi[num_porti_validi] = i;
+                    num_porti_validi++;
+                }
+            }
         }
-        if (shared_memory_porto[mid].merce_richiesta_id > id_merce){
-            return ricerca_binaria_porto(id_merce, shared_memory_porto, start, mid - 1);
-        }
-        return ricerca_binaria_porto(id_merce, shared_memory_porto, mid + 1, end);
     }
-    return -1;
+
+    /* Scegli un porto valido a caso tra quelli disponibili */
+    if (num_porti_validi > 0){
+        index_porto_casuale = rand() % num_porti_validi;
+        index_porto_scelto = indici_porti_validi[index_porto_casuale];
+    }
+
+    return index_porto_scelto;
 }
 
 

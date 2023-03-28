@@ -3,12 +3,36 @@
 int main(int argc, char **argv){
     int indirizzo_attachment_shared_memory_porto;
     int indirizzo_attachment_shared_memory_semaforo;
+    int indirizzo_attachment_shared_memory_scadenze_statistiche;
     struct struct_porto *shared_memory_porto;
+    struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche;
     double *temp_posizione_porto;
     sem_t *semaforo_master;
     sem_t *shared_memory_semaforo;
     int messaggio_id;
     int i;
+
+    /*cattura delle variabili*/
+    FILE* config_file;
+    int so_porti;
+
+    config_file = fopen("config.txt", "r");
+     if (config_file == NULL) {
+        printf("Errore nell'apertura del file\n");
+        return 1;
+    }
+    while (!feof(config_file)) {
+        char name[20];
+        int value;
+        fscanf(config_file, "%19[^=]=%d\n", name, &value);
+        if (strcmp(name, "SO_PORTI") == 0) {
+            so_porti = value;
+        }
+    }
+
+    fclose(config_file);
+
+    /*srand*/
     srand(getpid());
 
     /*gestione semafori*/
@@ -29,12 +53,17 @@ int main(int argc, char **argv){
     porto.numero_lotti_merce = generatore_lotti_merce();
     porto.conteggio_merce_ricevuta_porto = 0;
     porto.conteggio_merce_spedita_porto = 0;
-    porto.pid_porto = getpid();
+    porto.pid_porto = getpid();    
 
     /*inserisco le informazioni nella memoria condivisa, nella posizione giusta*/
-    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto) * SO_PORTI, SHM_W);
+    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto) * so_porti, SHM_W);
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
     shared_memory_porto[(getpid() - getppid())-1] = porto;
+    indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
+    shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0);
+
+    /*aggiornamento statistica*/
+    shared_memory_scadenze_statistiche->merce_generata_inizialmente[porto.merce_offerta_id] += porto.merce_offerta_quantita;
 
     /*visualizzo e provo a modificare il contenuto*/
     printf("PORTO pid: %d, indice porto: %d, coordinate porto: %f  - %f\n", getpid(), getpid() - getppid()-1, porto.posizione_porto_X, porto.posizione_porto_Y);
