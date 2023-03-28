@@ -1,11 +1,23 @@
 #include "header.h"
 
-void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_porti, struct struct_porto *shared_memory_porto, struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche){
+void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_porti, struct struct_porto *shared_memory_porto, struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche, int so_navi){
     int somma_merci_disponibili;
+    int navi_con_carico, navi_senza_carico, navi_nel_porto;
     int i,j;
 
     /*reset giornalieri*/
     somma_merci_disponibili = 0;
+
+    navi_con_carico = 0;
+    navi_senza_carico = 0;
+    navi_nel_porto = 0;
+
+    /*conta stats navi*/
+    for(i = 0; i < so_navi; i++){
+        if(shared_memory_scadenze_statistiche->navi_con_carico[i] == 1) navi_con_carico++;
+        if(shared_memory_scadenze_statistiche->navi_senza_carico[i] == 1) navi_senza_carico++;
+        if(shared_memory_scadenze_statistiche->navi_nel_porto[i] == 1) navi_nel_porto++;
+    }
 
     /*LA MERCE CONSEGNATA VA SUDDIVISA IN TIPOLOGIA*/
 
@@ -24,7 +36,7 @@ void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_port
     }
       
     printf("Navi:\n");
-    printf("\tCon un carico a bordo: %d - Senza un carico a bordo: %d - Nel porto: %d\n", shared_memory_scadenze_statistiche->navi_con_carico, shared_memory_scadenze_statistiche->navi_senza_carico, shared_memory_scadenze_statistiche->navi_nel_porto);                                                                              
+    printf("\tCon un carico a bordo: %d - Senza un carico a bordo: %d - Nel porto: %d\n", navi_con_carico, navi_senza_carico, navi_nel_porto);                                                                              
     printf("Porti:\n");
     for(i = 0; i < so_porti; i++){
         printf("\tNumero porto: %d - Merce disponibile: %d - Merce totale spedita e ricevuta in tonnellate: %d, %d - Numero di banchine libere: %d - Lotti rimanenti: %d\n", i, shared_memory_porto[i].merce_offerta_quantita * shared_memory_porto[i].numero_lotti_merce, shared_memory_porto[i].conteggio_merce_spedita_porto, shared_memory_porto[i].conteggio_merce_ricevuta_porto, shared_memory_porto[i].numero_banchine_libere, shared_memory_porto[i].numero_lotti_merce);
@@ -33,24 +45,35 @@ void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_port
     fflush(stdout); 
 }
 
-void stampa_report_finale(int giorni_simulazione, int so_merci, int so_porti, struct struct_porto *shared_memory_porto, struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche){
+void stampa_report_finale(int giorni_simulazione, int so_merci, int so_porti, struct struct_porto *shared_memory_porto, struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche, int so_navi){
     int somma_merci_disponibili;
     int porto_offerto_maggiore_conto, porto_offerto_maggiore;
     int porto_richiesto_maggiore_conto, porto_richiesto_maggiore;
+    int navi_con_carico, navi_senza_carico, navi_nel_porto;
     int i;
     int j;
 
     porto_offerto_maggiore_conto = 0;
     porto_richiesto_maggiore_conto = 0;
     somma_merci_disponibili = 0;
+    navi_con_carico = 0;
+    navi_senza_carico = 0;
+    navi_nel_porto = 0;
+
+    /*conta stats navi*/
+    for(i = 0; i < so_navi; i++){
+        if(shared_memory_scadenze_statistiche->navi_con_carico[i] == 1) navi_con_carico++;
+        if(shared_memory_scadenze_statistiche->navi_senza_carico[i] == 1) navi_senza_carico++;
+        if(shared_memory_scadenze_statistiche->navi_nel_porto[i] == 1) navi_nel_porto++;
+    }
 
     printf("\n\n------------------------------------\n\n");
     printf("REPORT FINALE\n");
 
     printf("Navi: \n");
-    printf("\tNumero di navi in mare con un carico a bordo: %d\n", shared_memory_scadenze_statistiche->navi_con_carico);
-    printf("\tNumero di navi in mare senza un carico: %d\n", shared_memory_scadenze_statistiche->navi_senza_carico);
-    printf("\tNumero di navi che occupano una banchina: %d\n", shared_memory_scadenze_statistiche->navi_nel_porto);
+    printf("\tNumero di navi in mare con un carico a bordo: %d\n", navi_con_carico);
+    printf("\tNumero di navi in mare senza un carico: %d\n", navi_senza_carico);
+    printf("\tNumero di navi che occupano una banchina: %d\n", navi_nel_porto);
 
     printf("Merci:\n");  
     for(i = 0; i < so_merci; i++){
@@ -180,7 +203,7 @@ int main() {
     shared_memory_giorni->giorni = giorni_simulazione;
 
     while (shared_memory_giorni->giorni <= so_days) {
-        stampa_report_giornaliero(shared_memory_giorni->giorni, so_merci, so_porti, shared_memory_porto, shared_memory_scadenze_statistiche); /*stampa report giornaliero*/
+        stampa_report_giornaliero(shared_memory_giorni->giorni, so_merci, so_porti, shared_memory_porto, shared_memory_scadenze_statistiche, so_navi); /*stampa report giornaliero*/
         sleep(1);
 
         /*aggiornamento scadenze porto*/
@@ -208,7 +231,7 @@ int main() {
         shared_memory_giorni->giorni++;
     }
 
-    stampa_report_finale(shared_memory_giorni->giorni, so_merci, so_porti, shared_memory_porto, shared_memory_scadenze_statistiche);
+    stampa_report_finale(shared_memory_giorni->giorni, so_merci, so_porti, shared_memory_porto, shared_memory_scadenze_statistiche, so_navi);
     printf("\nFINE PROGRAMMA\n");
 
     /*termino il processo ouput*/

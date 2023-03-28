@@ -90,7 +90,7 @@ int main(){
 
     /*gestione ripartenza*/
     kill(getppid(), SIGUSR1);
-    pause();    
+    pause();  
 
 
     /*inizio la simulzione vera e propria*/
@@ -98,10 +98,10 @@ int main(){
         prossima_tappa = -1;
 
         /*aggiornamento statistiche*/
-        if(nave.capacita_nave == 0){
-            shared_memory_scadenze_statistiche->navi_senza_carico++;
+        if(nave.merce_nave.dimensione_merce == 0){
+            shared_memory_scadenze_statistiche->navi_senza_carico[getpid() - getppid() - so_porti - 1] = 1;
         }else{
-            shared_memory_scadenze_statistiche->navi_con_carico++;
+            shared_memory_scadenze_statistiche->navi_con_carico[getpid() - getppid() - so_porti - 1] = 1;
         }
         
         /*controllo se sono finite le merci nei porti*/
@@ -141,7 +141,11 @@ int main(){
             tempo_spostamento_nave(distanza_nave_porto(nave.posizione_nave_X, nave.posizione_nave_Y, shared_memory_porto[prossima_tappa].posizione_porto_X , shared_memory_porto[prossima_tappa].posizione_porto_Y));
             /*ora sono arrivato al porto e posso iniziare le operazioni di carico e di scarico delle merci*/
 
-            shared_memory_scadenze_statistiche->navi_nel_porto++;
+
+            /*aggiorno la posizione*/
+            shared_memory_scadenze_statistiche->navi_con_carico[getpid() - getppid() - so_porti - 1] = 0;
+            shared_memory_scadenze_statistiche->navi_senza_carico[getpid() - getppid() - so_porti - 1] = 0;
+            shared_memory_scadenze_statistiche->navi_nel_porto[getpid() - getppid() - so_porti - 1] = 1;
 
             /*aggiorno le coordinate delle navi*/
             nave.posizione_nave_Y = shared_memory_porto[prossima_tappa].posizione_porto_Y;
@@ -151,10 +155,6 @@ int main(){
             tempo_sosta_porto(nave.merce_nave.dimensione_merce);
 
             /*scarico la nave*/
-            if(nave.merce_nave.dimensione_merce != 0){
-                shared_memory_scadenze_statistiche->navi_con_carico--;
-            }
-            shared_memory_scadenze_statistiche->navi_senza_carico++;
             shared_memory_scadenze_statistiche->merce_consegnata[nave.merce_nave.id_merce] += nave.merce_nave.dimensione_merce;
             shared_memory_porto[prossima_tappa].conteggio_merce_ricevuta_porto += nave.merce_nave.dimensione_merce;
             nave.merce_nave.dimensione_merce = 0; 
@@ -163,15 +163,17 @@ int main(){
             nave.merce_nave.id_merce = shared_memory_porto[prossima_tappa].merce_offerta_id;
             nave.merce_nave.dimensione_merce = shared_memory_porto[prossima_tappa].merce_offerta_quantita / shared_memory_porto[prossima_tappa].numero_lotti_merce;
             shared_memory_porto[prossima_tappa].merce_offerta_quantita -= shared_memory_porto[prossima_tappa].merce_offerta_quantita / shared_memory_porto[prossima_tappa].numero_lotti_merce;
-            shared_memory_porto[prossima_tappa].conteggio_merce_spedita_porto += nave.merce_nave.dimensione_merce;
-            shared_memory_scadenze_statistiche->navi_senza_carico--;
-            shared_memory_scadenze_statistiche->navi_con_carico++;
-            
+            shared_memory_porto[prossima_tappa].conteggio_merce_spedita_porto += nave.merce_nave.dimensione_merce;            
             shared_memory_porto[prossima_tappa].numero_lotti_merce -= 1;
 
             /*lascio virtualmente il porto e libero una banchina*/
             shared_memory_porto[prossima_tappa].numero_banchine_libere++;
-            shared_memory_scadenze_statistiche->navi_nel_porto--;
+            /*aggiorno la posizione*/
+            shared_memory_scadenze_statistiche->navi_con_carico[getpid() - getppid() - so_porti - 1] = 1;
+            shared_memory_scadenze_statistiche->navi_senza_carico[getpid() - getppid() - so_porti - 1] = 0;
+            shared_memory_scadenze_statistiche->navi_nel_porto[getpid() - getppid() - so_porti - 1] = 0;
+
+
             /*salvo nuovamente lo status della nave*/
             shared_memory_nave[getpid() - getppid() - so_porti - 1] = nave;
 

@@ -93,15 +93,15 @@ struct struct_messaggio_buffer{
 struct struct_controllo_scadenze_statistiche{
     int numero_navi_senza_merce;
     int numero_porti_senza_merce;
-    int merce_consegnata[100];
+    int merce_consegnata[10];
 
-    int navi_nel_porto;
-    int navi_con_carico;
-    int navi_senza_carico;
+    int navi_nel_porto[10000];
+    int navi_con_carico[10000];
+    int navi_senza_carico[10000];
 
-    int merce_generata_inizialmente[100];
-    int merce_scaduta_porto[100];
-    int merce_scaduta_nave[100];
+    int merce_generata_inizialmente[10];
+    int merce_scaduta_porto[10];
+    int merce_scaduta_nave[10];
 };
 
 struct struct_giorni{
