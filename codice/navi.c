@@ -67,6 +67,7 @@ int main(){
     tappe_nei_porti = 0;
 
     /*generazione delle informazioni della nave*/
+    nave.pid_nave = getpid();
     nave.capacita_nave = generatore_capacita_nave();
     coordinate_temporanee = generatore_posizione_iniziale_nave();
     nave.posizione_nave_X = coordinate_temporanee[0];

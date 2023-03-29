@@ -11,6 +11,7 @@ int main() {
     int indirizzo_attachment_shared_memory_scadenze_statistiche;
     int indirizzo_attachment_shared_memory_nave;
     int indirizzo_attachment_shared_memory_giorni;
+    struct struct_nave *shared_memory_nave;
     struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche;
     pid_t pid_processi;
     sem_t *semaforo_master;
@@ -21,7 +22,7 @@ int main() {
 
     /*cattura delle variabili*/
     FILE* config_file;
-    int so_navi, so_porti;
+    int so_navi, so_porti, so_maelstrom, so_days;
 
     /*"cattura" delle variabili*/
     config_file = fopen("config.txt", "r");
@@ -39,6 +40,12 @@ int main() {
         }
         if (strcmp(name, "SO_NAVI") == 0) {
             so_navi = value;
+        }
+        if (strcmp(name, "SO_MAELSTROM") == 0) {
+            so_maelstrom = value;
+        }
+        if (strcmp(name, "SO_DAYS") == 0) {
+            so_days = value;
         }
     }
 
@@ -107,7 +114,7 @@ int main() {
     /*apro il processo ouput.c*/
     switch (pid_processi = fork()){
         case -1:
-            fprintf(stderr, "Errore nella fork() della Nave");
+            fprintf(stderr, "Errore nella fork() dell'Output");
             exit(EXIT_FAILURE);
             break;    
         case 0: 
@@ -117,9 +124,22 @@ int main() {
             break;
     }
 
+    /*apro il processo meteo.c*/
+    switch (pid_processi = fork()){
+        case -1:
+            fprintf(stderr, "Errore nella fork() del Meteo");
+            exit(EXIT_FAILURE);
+            break;    
+        case 0: 
+            execvp("./meteo", args);
+            break;            
+        default: 
+            break;
+    }
+
 
     /* aspetta che tutti i processi figli terminino */
-    for (i = 0; i < so_navi + 1; i++) {
+    for (i = 0; i < so_navi + 2 - ((so_days * 24) / so_maelstrom); i++) {
         wait(NULL);
     }
 

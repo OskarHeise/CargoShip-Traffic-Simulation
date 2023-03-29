@@ -14,7 +14,7 @@ int main(int argc, char **argv){
 
     /*cattura delle variabili*/
     FILE* config_file;
-    int so_porti;
+    int so_porti, so_days;
 
     config_file = fopen("config.txt", "r");
      if (config_file == NULL) {
@@ -27,6 +27,9 @@ int main(int argc, char **argv){
         fscanf(config_file, "%19[^=]=%d\n", name, &value);
         if (strcmp(name, "SO_PORTI") == 0) {
             so_porti = value;
+        }
+        if (strcmp(name, "SO_DAYS") == 0) {
+            so_days = value;
         }
     }
 
@@ -41,9 +44,9 @@ int main(int argc, char **argv){
     /*genero tutte le informazioni del porto*/
     do{
         porto.merce_richiesta_id = generatore_merce_richiesta_id();
-        porto.merce_richiesta_quantita = generatore_merce_richiesta_quantita();
+        porto.merce_richiesta_quantita = generatore_merce_richiesta_quantita() / so_days;
         porto.merce_offerta_id = generatore_merce_offerta_id();
-        porto.merce_offerta_quantita = generatore_merce_offerta_quantita(porto.merce_richiesta_quantita);
+        porto.merce_offerta_quantita = generatore_merce_offerta_quantita(porto.merce_richiesta_quantita) / so_days;
         porto.merce_offerta_tempo_vita = generatore_tempo_vita_merce();
     }while(porto.merce_richiesta_id == porto.merce_offerta_id);
     temp_posizione_porto = generatore_posizione_iniziale_porto(getpid(), getppid());

@@ -45,7 +45,7 @@ void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_port
     fflush(stdout); 
 }
 
-void stampa_report_finale(int giorni_simulazione, int so_merci, int so_porti, struct struct_porto *shared_memory_porto, struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche, int so_navi){
+void stampa_report_finale(int giorni_simulazione, int so_merci, int so_porti, struct struct_porto *shared_memory_porto, struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche, int so_navi, int so_days){
     int somma_merci_disponibili;
     int porto_offerto_maggiore_conto, porto_offerto_maggiore;
     int porto_richiesto_maggiore_conto, porto_richiesto_maggiore;
@@ -74,8 +74,14 @@ void stampa_report_finale(int giorni_simulazione, int so_merci, int so_porti, st
     printf("\tNumero di navi in mare con un carico a bordo: %d\n", navi_con_carico);
     printf("\tNumero di navi in mare senza un carico: %d\n", navi_senza_carico);
     printf("\tNumero di navi che occupano una banchina: %d\n", navi_nel_porto);
+    printf("\tNumero navi rallentate dalla tempesta: %d \n", shared_memory_scadenze_statistiche->navi_rallentate_tempesta); 
+    printf("\tNumero navi affondate dalla maelstrom: %d \n", shared_memory_scadenze_statistiche->navi_affondate_maelstrom); 
+    printf("\tId porti interessati dalla mareggiata: "); 
+    for(i = 1; i <= so_days; i++){
+        printf(" %d ", shared_memory_scadenze_statistiche->porti_interessati_mareggiata[i]);
+    }
 
-    printf("Merci:\n");  
+    printf("\nMerci:\n");  
     for(i = 0; i < so_merci; i++){
         for(j = 0; j < so_porti; j++){
             if(i == shared_memory_porto[j].merce_offerta_id){
@@ -153,6 +159,8 @@ int main() {
     struct struct_porto *shared_memory_porto;
     struct struct_nave *shared_memory_nave;
     int i;
+    int numero_modifiche;
+    int indice_da_modificare;
 
     /*cattura delle variabili*/
     FILE* config_file;
@@ -186,6 +194,9 @@ int main() {
 
     fclose(config_file);
 
+    /*srand*/
+    srand(getpid());
+
     /*inizializzo i giorni della simulazione a 0*/
     giorni_simulazione = 1;
 
@@ -217,6 +228,20 @@ int main() {
             }
         }
 
+        /*aggiornamento generazione merce nei porti*/
+        numero_modifiche = so_porti / 3;
+        for(i = 0; i < numero_modifiche; i++){
+            indice_da_modificare = rand() % so_porti;
+            do{
+                shared_memory_porto[indice_da_modificare].merce_richiesta_id = generatore_merce_richiesta_id();
+                shared_memory_porto[indice_da_modificare].merce_richiesta_quantita = generatore_merce_richiesta_quantita() / so_days;
+                shared_memory_porto[indice_da_modificare].merce_offerta_id = generatore_merce_offerta_id();
+                shared_memory_porto[indice_da_modificare].merce_offerta_quantita = generatore_merce_offerta_quantita(shared_memory_porto[i].merce_richiesta_quantita) / so_days;
+                shared_memory_porto[indice_da_modificare].merce_offerta_tempo_vita = generatore_tempo_vita_merce();
+            }while(shared_memory_porto[indice_da_modificare].merce_richiesta_id == shared_memory_porto[indice_da_modificare].merce_offerta_id);
+            shared_memory_porto[indice_da_modificare].numero_lotti_merce = generatore_lotti_merce();
+        }
+
         /*aggiornamento scadenze nave*/
         for(i = 0; i < so_navi; i++){
             if(shared_memory_nave[i].merce_nave.tempo_vita_merce <= 0){
@@ -231,7 +256,7 @@ int main() {
         shared_memory_giorni->giorni++;
     }
 
-    stampa_report_finale(shared_memory_giorni->giorni, so_merci, so_porti, shared_memory_porto, shared_memory_scadenze_statistiche, so_navi);
+    stampa_report_finale(shared_memory_giorni->giorni, so_merci, so_porti, shared_memory_porto, shared_memory_scadenze_statistiche, so_navi, so_days);
     printf("\nFINE PROGRAMMA\n");
 
     /*termino il processo ouput*/
