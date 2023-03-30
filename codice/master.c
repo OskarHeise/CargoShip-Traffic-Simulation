@@ -16,7 +16,7 @@ int main() {
     pid_t pid_processi;
     sem_t *semaforo_master;
     pid_t *pid_figli; /*salvo i pid dei processi figli in un array*/
-    int i;
+    int i,j;
     char c;
     char **args;
 
@@ -67,40 +67,47 @@ int main() {
     printf("\n\n\n");    
 
     /*creazione processi porto*/
-    for(i = 0; i < so_porti; i++){  
+    for(i = 0; i < so_porti; i += 256){  /*incremento di 256 ad ogni blocco*/
+        for(j = i; j < i + 256 && j < so_porti; j++){
         sem_wait(semaforo_master);
-        switch (pid_processi = fork()){
-            case -1:
-                fprintf(stderr, "Errore nella fork() del Porto");
-                exit(EXIT_FAILURE);
-                break;    
-            case 0:
-                execvp("./porti", args);
-                break;            
-            default:
-                signal(SIGCHLD, handle_child);
-                pause();
-                break;
-        } 
+            switch (pid_processi = fork()){
+                case -1:
+                    fprintf(stderr, "Errore nella fork() del Porto");
+                    exit(EXIT_FAILURE);
+                    break;
+                case 0:
+                    execvp("./porti", args);
+                    break;
+                default:
+                    signal(SIGCHLD, handle_child);
+                    pause();
+                    break;
+            }
+        }
+        sleep(0); /*inseriamo uno sleep(0) tra un blocco e l'altro*/
+        printf("Creazione processi porto: %d/%d \n", j, so_porti);
     }
 
-    printf("\n\n\n");
+    printf("\n\n");
 
-    /*creazione processi nave*/
-    for(i = 0; i < so_navi; i++){
-        sem_wait(semaforo_master); 
-        switch (pid_figli[i] = fork()){
-            case -1:
-                fprintf(stderr, "Errore nella fork() della Nave");
-                exit(EXIT_FAILURE);
-                break;    
-            case 0: 
-                execvp("./navi", args);
-                break;            
-            default: 
-                signal(SIGUSR1, handle_child_ready);
-                break;
+    for(i = 0; i < so_navi; i += 256){ /*incremento di 256 ad ogni blocco*/
+        for(j = i; j < i + 256 && j < so_navi; j++){
+            sem_wait(semaforo_master);
+            switch (pid_figli[j] = fork()){
+                case -1:
+                    fprintf(stderr, "Errore nella fork() della Nave");
+                    exit(EXIT_FAILURE);
+                    break;
+                case 0:
+                    execvp("./navi", args);
+                    break;
+                default:
+                    signal(SIGUSR1, handle_child_ready);
+                    break;
+            }
         }
+        sleep(0); /*inseriamo uno sleep(0) tra un blocco e l'altro*/
+        printf("Creazione processi nave: %d/%d \n", j, so_navi);
     }
 
     /*gestione delle "fermate" e delle "ripartenze"*/
@@ -111,14 +118,15 @@ int main() {
         kill(pid_figli[i], SIGUSR1);
     }
 
-    /*apro il processo ouput.c*/
+
+    /*apro il processo print.c*/
     switch (pid_processi = fork()){
         case -1:
-            fprintf(stderr, "Errore nella fork() dell'Output");
+            fprintf(stderr, "Errore nella fork() del Print");
             exit(EXIT_FAILURE);
             break;    
         case 0: 
-            execvp("./output", args);
+            execvp("./print", args);
             break;            
         default: 
             break;
@@ -147,7 +155,6 @@ int main() {
     /*chiusura delle risorse IPC*/
     sem_close(semaforo_master);
     sem_unlink(semaforo_nome);
-    sem_unlink(semaforo_nave_nome);
     memoria_condivisa_deallocazione(indirizzo_attachment_shared_memory_giorni);
     memoria_condivisa_deallocazione(indirizzo_attachment_shared_memory_nave);
     memoria_condivisa_deallocazione(indirizzo_attachment_shared_memory_porto);

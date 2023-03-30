@@ -74,8 +74,6 @@ int main(){
     nave.posizione_nave_Y = coordinate_temporanee[1];
     nave.velocita_nave = so_speed;
     
-    printf("NAVE pid: %d pid padre %d, indice nave: %d, coordinate nave: %f  - %f\n", getpid(), getppid(), getpid() - getppid() - so_porti - 1, nave.posizione_nave_X, nave.posizione_nave_Y);
-
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
     shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0);
     indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO,  sizeof(struct struct_porto) * so_porti, SHM_W);
@@ -93,8 +91,6 @@ int main(){
     kill(getppid(), SIGUSR1);
     pause();  
 
-
-    /*inizio la simulzione vera e propria*/
     while(shared_memory_giorni->giorni <= so_days /*|| shared_memory_scadenze_statistiche->numero_porti_senza_merce == so_porti*/){
         prossima_tappa = -1;
 
@@ -103,11 +99,6 @@ int main(){
             shared_memory_scadenze_statistiche->navi_senza_carico[getpid() - getppid() - so_porti - 1] = 1;
         }else{
             shared_memory_scadenze_statistiche->navi_con_carico[getpid() - getppid() - so_porti - 1] = 1;
-        }
-        
-        /*controllo se sono finite le merci nei porti*/
-        /*if(porto.merce_offerta_quantita == 0){
-            shared_memory_scadenze_statistiche->numero_porti_senza_merce++;
         }
 
         /*scelgo il porto in cui sbarcare*/
@@ -159,7 +150,7 @@ int main(){
             shared_memory_scadenze_statistiche->merce_consegnata[nave.merce_nave.id_merce] += nave.merce_nave.dimensione_merce;
             shared_memory_porto[prossima_tappa].conteggio_merce_ricevuta_porto += nave.merce_nave.dimensione_merce;
             nave.merce_nave.dimensione_merce = 0; 
-            
+
             /*carico la nave*/
             nave.merce_nave.id_merce = shared_memory_porto[prossima_tappa].merce_offerta_id;
             nave.merce_nave.dimensione_merce = shared_memory_porto[prossima_tappa].merce_offerta_quantita / shared_memory_porto[prossima_tappa].numero_lotti_merce;
@@ -180,6 +171,7 @@ int main(){
 
         }
     }
+
 
     fflush(stdout);
 

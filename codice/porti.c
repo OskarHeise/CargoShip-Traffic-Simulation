@@ -8,7 +8,6 @@ int main(int argc, char **argv){
     struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche;
     double *temp_posizione_porto;
     sem_t *semaforo_master;
-    sem_t *shared_memory_semaforo;
     int messaggio_id;
     int i;
 
@@ -67,9 +66,6 @@ int main(int argc, char **argv){
 
     /*aggiornamento statistica*/
     shared_memory_scadenze_statistiche->merce_generata_inizialmente[porto.merce_offerta_id] += porto.merce_offerta_quantita;
-
-    /*visualizzo e provo a modificare il contenuto*/
-    printf("PORTO pid: %d, indice porto: %d, coordinate porto: %f  - %f\n", getpid(), getpid() - getppid()-1, porto.posizione_porto_X, porto.posizione_porto_Y);
 
     sem_post(semaforo_master);
     sem_close(semaforo_master);

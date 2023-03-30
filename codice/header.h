@@ -34,6 +34,8 @@
 #define MSG_KEY 2367
 #define SEM_VAL 0
 
+
+
 int shared_memory_id_conteggio_nave;
 int numero_giorno;
 struct struct_porto porto; 
@@ -45,8 +47,8 @@ int conteggio_navi_con_carico;
 int conteggio_navi_senza_carico;
 int conteggio_navi_nel_porto;
 
+const char *semaforo_banchine_nome = "/semaforo_banchine";
 const char *semaforo_nome = "/semaforo";
-const char *semaforo_nave_nome = "/semaforoNave";
 
 struct struct_merce{
     int id_merce; /*genero la tipologia di merce con un ID numerico*/
@@ -562,7 +564,7 @@ int generatore_merce_offerta_quantita(int merce_richiesta_quantita){
 
     /*cattura delle variabili*/
     FILE* config_file;
-    int so_fill;
+    int so_fill, so_porti;
 
     config_file = fopen("config.txt", "r");
      if (config_file == NULL) {
@@ -576,11 +578,14 @@ int generatore_merce_offerta_quantita(int merce_richiesta_quantita){
         if (strcmp(name, "SO_FILL") == 0) {
             so_fill = value;
         }
+        if (strcmp(name, "SO_PORTI") == 0) {
+            so_porti = value;
+        }
     }
 
     fclose(config_file);
 
-    numero_randomico = so_fill - merce_richiesta_quantita;
+    numero_randomico = (so_fill / so_porti) - merce_richiesta_quantita;
     return numero_randomico;
 }
 
@@ -623,7 +628,7 @@ int generatore_merce_richiesta_quantita(){
 
     /*cattura delle variabili*/
     FILE* config_file;
-    int so_fill;
+    int so_fill, so_porti;
 
     config_file = fopen("config.txt", "r");
      if (config_file == NULL) {
@@ -637,11 +642,14 @@ int generatore_merce_richiesta_quantita(){
         if (strcmp(name, "SO_FILL") == 0) {
             so_fill = value;
         }
+        if (strcmp(name, "SO_PORTI") == 0) {
+            so_porti = value;
+        }
     }
 
     fclose(config_file);
 
-    numero_randomico = rand()%so_fill;
+    numero_randomico = rand()%(so_fill / so_porti);
     return numero_randomico;
 }
 
