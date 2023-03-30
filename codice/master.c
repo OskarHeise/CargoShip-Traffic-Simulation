@@ -11,13 +11,10 @@ int main() {
     int indirizzo_attachment_shared_memory_scadenze_statistiche;
     int indirizzo_attachment_shared_memory_nave;
     int indirizzo_attachment_shared_memory_giorni;
-    struct struct_nave *shared_memory_nave;
-    struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche;
     pid_t pid_processi;
     sem_t *semaforo_master;
     pid_t *pid_figli; /*salvo i pid dei processi figli in un array*/
     int i,j;
-    char c;
     char **args;
 
     /*cattura delle variabili*/
@@ -116,6 +113,7 @@ int main() {
     }
     for (i = 0; i < so_navi; i++){
         kill(pid_figli[i], SIGUSR1);
+        usleep(100);
     }
 
 

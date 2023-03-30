@@ -10,16 +10,10 @@ int main(){
     struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche;
     struct struct_nave *shared_memory_nave;
     struct struct_giorni *shared_memory_giorni;
-    char **args;
-    int pid_di_stampa;
     double *coordinate_temporanee;
     int tappe_nei_porti;
     int prossima_tappa; /*indice del porto in cui recarsi*/
     int tappa_precedente;
-    int i;
-
-    sigset_t set;
-    siginfo_t info;
 
     /*cattura delle variabili*/
     FILE* config_file;
@@ -59,9 +53,6 @@ int main(){
     /*aprertura semaforo*/
     semaforo_master = sem_open(semaforo_nome, O_RDWR);
 
-    /*generazione del pid di stampa*/
-    pid_di_stampa = (getppid() + so_porti + 1) / getpid();
-
     /*setto la tappa precedente, in questo caso -1 perchè non abbiamo ancora iniziato*/
     tappa_precedente = -1;
     tappe_nei_porti = 0;
@@ -91,6 +82,9 @@ int main(){
     kill(getppid(), SIGUSR1);
     pause();  
 
+
+
+
     while(shared_memory_giorni->giorni <= so_days /*|| shared_memory_scadenze_statistiche->numero_porti_senza_merce == so_porti*/){
         prossima_tappa = -1;
 
@@ -103,7 +97,7 @@ int main(){
 
         /*scelgo il porto in cui sbarcare*/
         if(tappe_nei_porti == 0 || nave.merce_nave.dimensione_merce == 0){ /*caso in cui non ha la merce*/
-            prossima_tappa = ricerca_binaria(shared_memory_porto, 0, so_porti - 1, nave.posizione_nave_X, nave.posizione_nave_Y);
+            prossima_tappa = ricerca_binaria(shared_memory_porto, 0, so_porti - 1, nave.posizione_nave_X, nave.posizione_nave_Y, so_porti);
             tappe_nei_porti++;
         }else {
             prossima_tappa = ricerca_binaria_porto(nave.merce_nave.id_merce, shared_memory_porto, so_porti, tappa_precedente);
@@ -153,7 +147,8 @@ int main(){
 
             /*carico la nave*/
             nave.merce_nave.id_merce = shared_memory_porto[prossima_tappa].merce_offerta_id;
-            nave.merce_nave.dimensione_merce = shared_memory_porto[prossima_tappa].merce_offerta_quantita / shared_memory_porto[prossima_tappa].numero_lotti_merce;
+            if((shared_memory_porto[prossima_tappa].merce_offerta_quantita / shared_memory_porto[prossima_tappa].numero_lotti_merce) >= nave.capacita_nave) nave.merce_nave.dimensione_merce = nave.capacita_nave;
+            else nave.merce_nave.dimensione_merce = (shared_memory_porto[prossima_tappa].merce_offerta_quantita / shared_memory_porto[prossima_tappa].numero_lotti_merce);
             shared_memory_porto[prossima_tappa].merce_offerta_quantita -= shared_memory_porto[prossima_tappa].merce_offerta_quantita / shared_memory_porto[prossima_tappa].numero_lotti_merce;
             shared_memory_porto[prossima_tappa].conteggio_merce_spedita_porto += nave.merce_nave.dimensione_merce;            
             shared_memory_porto[prossima_tappa].numero_lotti_merce -= 1;

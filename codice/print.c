@@ -94,6 +94,7 @@ void stampa_report_finale(int giorni_simulazione, int so_merci, int so_porti, st
     fprintf(f, "\tNumero di navi in mare con un carico a bordo: %d\n", navi_con_carico);
     fprintf(f, "\tNumero di navi in mare senza un carico: %d\n", navi_senza_carico);
     fprintf(f, "\tNumero di navi che occupano una banchina: %d\n", navi_nel_porto);
+    fprintf(f, "Meteo:\n");
     fprintf(f, "\tNumero navi rallentate dalla tempesta: %d\n", shared_memory_scadenze_statistiche->navi_rallentate_tempesta);
     fprintf(f, "\tNumero navi affondate dalla maelstrom: %d\n", shared_memory_scadenze_statistiche->navi_affondate_maelstrom);
     fprintf(f, "\tId porti interessati dalla mareggiata:");

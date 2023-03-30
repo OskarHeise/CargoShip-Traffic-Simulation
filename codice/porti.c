@@ -2,14 +2,11 @@
 
 int main(int argc, char **argv){
     int indirizzo_attachment_shared_memory_porto;
-    int indirizzo_attachment_shared_memory_semaforo;
     int indirizzo_attachment_shared_memory_scadenze_statistiche;
     struct struct_porto *shared_memory_porto;
     struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche;
     double *temp_posizione_porto;
     sem_t *semaforo_master;
-    int messaggio_id;
-    int i;
 
     /*cattura delle variabili*/
     FILE* config_file;

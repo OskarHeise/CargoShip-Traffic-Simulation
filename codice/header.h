@@ -88,11 +88,6 @@ struct struct_tempo_spostamento{
     float nano_secondi;
 };
 
-struct struct_messaggio_buffer{
-    long messaggio_tipo;
-    char messaggio_testo[100];
-}messaggio;
-
 struct struct_controllo_scadenze_statistiche{
     int numero_navi_senza_merce;
     int numero_porti_senza_merce;
@@ -102,9 +97,9 @@ struct struct_controllo_scadenze_statistiche{
     int navi_con_carico[10000];
     int navi_senza_carico[10000];
 
-    int merce_generata_inizialmente[10];
-    int merce_scaduta_porto[10];
-    int merce_scaduta_nave[10];
+    int merce_generata_inizialmente[100];
+    int merce_scaduta_porto[100];
+    int merce_scaduta_nave[100];
 
     int navi_rallentate_tempesta;
     int porti_interessati_mareggiata[10000];
@@ -125,31 +120,6 @@ struct struct_giorni{
 ######################################
 ######################################
 */
-
-
-/*calcola la potenza*/
-double potenza(double n, int exp){
-    int risultato, i;
-    risultato = 1;
-    for(i = 1; i <= exp; i++){
-        risultato = risultato * n;
-    }
-    return risultato;
-}
-
-/*calcola la radice quadrata*/
-double radice_quadrata(double n){
-    int sqrt, temp;
-    sqrt = n/2;
-    temp = 0;
-
-    while(sqrt != temp){
-        temp = sqrt;
-        sqrt = (n/temp + temp)/2;
-    }
-
-    return sqrt;
-}
 
 /*genera casualmente l'ID della merce*/
 int generatore_id_merce(){
@@ -238,71 +208,6 @@ int generatore_tempo_vita_merce(){
 /*genero casualmente il numero di lotti di merce*/
 int generatore_lotti_merce(){
     return rand()%10+2;
-}
-
-/*genero casualmente il tempo di vita della merce offerta*/
-int generatore_tempo_vita_merce_offerta(int id_merce, pid_t pid_porto){
-    int i;
-    int j;
-    int risultato;
-    struct struct_merce* vettore_di_merci;
-
-    /*cattura delle variabili*/
-    FILE* config_file;
-    int so_navi;
-    int so_porti;
-
-    config_file = fopen("config.txt", "r");
-     if (config_file == NULL) {
-        printf("Errore nell'apertura del file\n");
-    }
-    while (!feof(config_file)) {
-        char name[20];
-        int value;
-        fscanf(config_file, "%19[^=]=%d\n", name, &value);
-        if (strcmp(name, "SO_NAVI") == 0) {
-            so_navi = value;
-        }
-        if (strcmp(name, "SO_PORTI") == 0) {
-            so_porti = value;
-        }
-    }
-
-    fclose(config_file);
-
-
-    vettore_di_merci = (struct struct_merce*)malloc(sizeof(struct struct_merce)*(so_porti+so_navi));
-    risultato = 0;
-    srand(pid_porto);
-
-    /*generazione delle merci e inserimento nell'array*/
-    for(i = 0; i < (so_porti+so_navi); i++){
-        vettore_di_merci[i].id_merce = generatore_id_merce();
-        vettore_di_merci[i].dimensione_merce = generatore_dimensione_merce();
-        vettore_di_merci[i].tempo_vita_merce = generatore_tempo_vita_merce();
-        for(j = 0; j < (so_porti+so_navi); j++){
-            if(vettore_di_merci[i].id_merce == vettore_di_merci[j].id_merce){
-                vettore_di_merci[i].tempo_vita_merce = vettore_di_merci[j].tempo_vita_merce;
-            }
-        }
-    }
-
-    for(i = 0; i < (so_porti+so_navi); i++){
-        if(vettore_di_merci[i].id_merce == id_merce){
-            risultato = vettore_di_merci[i].tempo_vita_merce+1;
-        }
-    }
-
-    if(risultato == 0){
-        return generatore_tempo_vita_merce();
-    }else{
-        return risultato;
-    }
-}
-
-/*restituisco il tempo di occupazione della banchina*/
-int tempo_occupazione_banchina(int quantita_merce_scambiata, int velocita_carico_scarico){
-    return quantita_merce_scambiata / velocita_carico_scarico;
 }
 
 /*Gestione della Memoria Condivisa*/
@@ -410,8 +315,8 @@ double spostamento_nave(double *posizione_nave, double posizione_porto_X, double
     elemento_x2 = posizione_porto_X;
     elemento_y2 = posizione_porto_Y;
 
-    numeratore_senza_radice = potenza((elemento_x2 - elemento_x1), 2) + potenza((elemento_y2 - elemento_y1), 2);
-    numeratore_con_radice = radice_quadrata(numeratore_senza_radice);  
+    numeratore_senza_radice = pow((elemento_x2 - elemento_x1), 2) + pow((elemento_y2 - elemento_y1), 2);
+    numeratore_con_radice = sqrt(numeratore_senza_radice);  
     risultato = (double)numeratore_con_radice/(double)so_speed;
     return risultato;
 }
@@ -591,8 +496,6 @@ int generatore_merce_offerta_quantita(int merce_richiesta_quantita){
 
 /*generatore dell'id della merce richiesta*/
 int generatore_merce_richiesta_id(){
-    int numero_randomico;
-
     /*cattura delle variabili*/
     FILE* config_file;
     int so_merci;
@@ -721,28 +624,8 @@ void tempo_spostamento_nave(double distanza_minima_temporanea){
     request.tv_nsec = 0;
 }
 
-int ricerca_binaria(struct struct_porto *shared_memory_porto, int inizio, int fine, double posizione_nave_X, double posizione_nave_Y){
+int ricerca_binaria(struct struct_porto *shared_memory_porto, int inizio, int fine, double posizione_nave_X, double posizione_nave_Y, int so_porti){
     int indice_medio, distanza_corrente, indice_sinistra, indice_destra;
-
-    /*cattura delle variabili*/
-    FILE* config_file;
-    int so_porti;
-
-    config_file = fopen("config.txt", "r");
-     if (config_file == NULL) {
-        printf("Errore nell'apertura del file\n");
-        
-    }
-    while (!feof(config_file)) {
-        char name[20];
-        int value;
-        fscanf(config_file, "%19[^=]=%d\n", name, &value);
-        if (strcmp(name, "SO_PORTI") == 0) {
-            so_porti = value;
-        }
-    }
-
-    fclose(config_file);
 
     if(fine < inizio){
         return so_porti + 10;
@@ -751,14 +634,14 @@ int ricerca_binaria(struct struct_porto *shared_memory_porto, int inizio, int fi
     indice_medio = (inizio + fine) / 2;
     if(shared_memory_porto[indice_medio].numero_banchine_libere == 0){
         if(indice_medio == inizio){
-            return ricerca_binaria(shared_memory_porto, indice_medio + 1, fine, posizione_nave_X, posizione_nave_Y);
+            return ricerca_binaria(shared_memory_porto, indice_medio + 1, fine, posizione_nave_X, posizione_nave_Y, so_porti);
         } else{
-            return ricerca_binaria(shared_memory_porto, inizio, indice_medio - 1, posizione_nave_X, posizione_nave_Y);
+            return ricerca_binaria(shared_memory_porto, inizio, indice_medio - 1, posizione_nave_X, posizione_nave_Y, so_porti);
         }
     } else{
         distanza_corrente = distanza_nave_porto(posizione_nave_X, posizione_nave_Y, shared_memory_porto[indice_medio].posizione_porto_X, shared_memory_porto[indice_medio].posizione_porto_Y);
-        indice_sinistra = ricerca_binaria(shared_memory_porto, inizio, indice_medio - 1, posizione_nave_X, posizione_nave_Y);
-        indice_destra = ricerca_binaria(shared_memory_porto, indice_medio + 1, fine, posizione_nave_X, posizione_nave_Y);
+        indice_sinistra = ricerca_binaria(shared_memory_porto, inizio, indice_medio - 1, posizione_nave_X, posizione_nave_Y, so_porti);
+        indice_destra = ricerca_binaria(shared_memory_porto, indice_medio + 1, fine, posizione_nave_X, posizione_nave_Y, so_porti);
 
         if(distanza_corrente <= distanza_nave_porto(posizione_nave_X, posizione_nave_Y, shared_memory_porto[indice_sinistra].posizione_porto_X, shared_memory_porto[indice_sinistra].posizione_porto_Y) &&
            distanza_corrente <= distanza_nave_porto(posizione_nave_X, posizione_nave_Y, shared_memory_porto[indice_destra].posizione_porto_X, shared_memory_porto[indice_destra].posizione_porto_Y)){
@@ -793,7 +676,7 @@ int calcolo_porto_piu_vicino(double posizione_nave_X, double posizione_nave_Y, s
 
     fclose(config_file);
 
-    return ricerca_binaria(shared_memory_porto, 0, so_porti - 1, posizione_nave_X, posizione_nave_Y);
+    return ricerca_binaria(shared_memory_porto, 0, so_porti - 1, posizione_nave_X, posizione_nave_Y, so_porti);
 }
 
 
@@ -878,168 +761,5 @@ int ricerca_binaria_porto(int id_merce, struct struct_porto *shared_memory_porto
 
     return index_porto_scelto;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*stampa del report giornaliero*/
-/*void print_report_giornaliero(struct struct_conteggio_nave *conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata){
-    int i;
-    int j;
-    int conteggio_navi_con_carico_totale;
-    int conteggio_navi_senza_carico_totale;
-    int conteggio_navi_nel_porto_totale;
-
-    conteggio_navi_con_carico_totale = 0;
-    conteggio_navi_senza_carico_totale = 0;
-    conteggio_navi_nel_porto_totale = 0;
-
-    for(i = 0; i < SO_PORTI; i++){
-        somma_merci_disponibili[i] = 0;
-        conteggio_merce_consegnata[i] = 0;
-    }
-
-
-    for(i = 0; i < (SO_NAVI+2)-1; i++){
-        conteggio_navi_con_carico_totale = conteggio_navi_con_carico_totale + conteggio_nave[i].conteggio_navi_con_carico;
-        conteggio_navi_senza_carico_totale = conteggio_navi_senza_carico_totale + conteggio_nave[i].conteggio_navi_senza_carico;
-        conteggio_navi_nel_porto_totale = conteggio_navi_nel_porto_totale + conteggio_nave[i].conteggio_navi_nel_porto;
-    }
-
-    sleep(1);
-
-    printf("\n\n------------------------------------\n\n");
-    printf("REPORT GIORNO %d\n", numero_giorno); 
-    printf("Merci:\n");  
-    
-    for(i = 0; i < SO_MERCI; i++){
-        for(j = 0; j < SO_PORTI; j++){
-            if(i == informazioni_porto[j].merce_offerta_id){
-                somma_merci_disponibili[i] = somma_merci_disponibili[i] + informazioni_porto[j].merce_offerta_quantita * informazioni_porto[j].numero_lotti_merce;
-                conteggio_merce_consegnata[i] = conteggio_merce_consegnata[i] + informazioni_porto[j].conteggio_merce_ricevuta_porto;
-            }
-        } 
-        
-        printf("\tTipologia: %d -> Disponibile: %d tonnellate & Consegnata: %d tonnellate\n", i, somma_merci_disponibili[i], conteggio_merce_consegnata[i]); 
-    }
-      
-    printf("Navi:\n");
-    printf("\tCon un carico a bordo: %d - Senza un carico a bordo: %d - Nel porto: %d\n", conteggio_navi_con_carico_totale, conteggio_navi_senza_carico_totale, conteggio_navi_nel_porto_totale);                                                                              
-    printf("Porti:\n");
-    for(i = 0; i < SO_PORTI; i++){
-        printf("\tNumero porto: %d - Merce disponibile: %d - Merce totale spedita e ricevuta in tonnellate: %d, %d - Numero di banchine libere: %d - Lotti rimanenti: %d\n", i+1, informazioni_porto[i].merce_offerta_quantita * informazioni_porto[i].numero_lotti_merce, informazioni_porto[i].conteggio_merce_spedita_porto, informazioni_porto[i].conteggio_merce_ricevuta_porto, informazioni_porto[i].numero_banchine_libere, informazioni_porto[i].numero_lotti_merce);
-    }
-
-    fflush(stdout); /*svuoto il buffer dello standard output*/
-/*}
-
-/*stampa del report finale*/
-/*void print_report_finale(struct struct_conteggio_nave *conteggio_nave, struct struct_merce *merce_nella_nave, int numero_giorno, struct struct_porto *informazioni_porto, int *somma_merci_disponibili, int *conteggio_merce_consegnata, int* totale_merce_generata_inizialmente, int *merce_scaduta_in_nave, int *merce_scaduta_in_porto, int tappe_nei_porti){
-    int i;
-    int j;
-    int k;
-    int conteggio_navi_con_carico_totale;
-    int conteggio_navi_senza_carico_totale;
-    int conteggio_navi_nel_porto_totale;
-    int porto_offerto_maggiore_conto;
-    int porto_offerto_maggiore;
-    int porto_richiesto_maggiore_conto;
-    int porto_richiesto_maggiore;
-
-    conteggio_navi_con_carico_totale = 0;
-    conteggio_navi_senza_carico_totale = 0;
-    conteggio_navi_nel_porto_totale = 0;
-    porto_offerto_maggiore = 0;
-    porto_offerto_maggiore_conto = 0;
-    porto_richiesto_maggiore_conto = 0;
-    porto_richiesto_maggiore = 0;
-
-    for(i = 0; i < (SO_NAVI+2)-1; i++){
-        conteggio_navi_con_carico_totale = conteggio_navi_con_carico_totale + conteggio_nave[i].conteggio_navi_con_carico;
-        conteggio_navi_senza_carico_totale = conteggio_navi_senza_carico_totale + conteggio_nave[i].conteggio_navi_senza_carico;
-        conteggio_navi_nel_porto_totale = conteggio_navi_nel_porto_totale + conteggio_nave[i].conteggio_navi_nel_porto;
-    }
-
-    for(i = 0; i < SO_MERCI; i++){
-        somma_merci_disponibili[i] = 0;
-        conteggio_merce_consegnata[i] = 0;
-    }
-
-    printf("\n\n------------------------------------\n\n");
-    printf("REPORT FINALE\n");
-
-    printf("Navi: \n");
-    printf("\tNumero di navi in mare con un carico a bordo: %d\n", conteggio_navi_con_carico_totale);
-    printf("\tNumero di navi in mare senza un carico: %d\n", conteggio_navi_senza_carico_totale);
-    printf("\tNumero di navi che occupano una banchina: %d\n", conteggio_navi_nel_porto_totale);
-
-    printf("Merci:\n");  
-    for(i = 0; i < SO_MERCI; i++){
-        for(j = 0; j < SO_PORTI; j++){
-            if(i == informazioni_porto[j].merce_offerta_id){
-                somma_merci_disponibili[i] = somma_merci_disponibili[i] + informazioni_porto[j].merce_offerta_quantita * informazioni_porto[j].numero_lotti_merce;
-                conteggio_merce_consegnata[i] = conteggio_merce_consegnata[i] + informazioni_porto[j].conteggio_merce_ricevuta_porto;
-            }
-        } 
-        printf("\tTipologia: %d -> \n\t\tDisponibile: %d tonnellate & Consegnata: %d tonnellate\n", i, somma_merci_disponibili[i], conteggio_merce_consegnata[i]);
-        /*printing per ogni tipo di merce*/
-        /*printf("\t\tTonnellate di merce iniziale: %d\n", totale_merce_generata_inizialmente[i]); 
-        printf("\t\tTonnellate rimaste nel porto: %d & Scadute nel porto: %d &  Scadute nella nave: %d & Consegnata da qualche nave: %d\n", somma_merci_disponibili[i], merce_scaduta_in_porto[i], merce_scaduta_in_nave[i], conteggio_merce_consegnata[i]);
-    }
-    
-
-    printf("Porti:\n");
-    for(i = 0; i < SO_PORTI; i++){
-        printf("\tNumero porto: %d - Merce totale spedita e ricevuta in tonnellate: %d, %d - Numero di banchine libere: %d - Lotti rimanenti: %d\n", i+1, informazioni_porto[i].conteggio_merce_spedita_porto, informazioni_porto[i].conteggio_merce_ricevuta_porto, informazioni_porto[i].numero_banchine_libere, informazioni_porto[i].numero_lotti_merce);
-    }
-    for(i = 0; i < SO_PORTI; i++){
-        if(porto_offerto_maggiore_conto < informazioni_porto[i].conteggio_merce_spedita_porto){
-            porto_offerto_maggiore_conto = informazioni_porto[i].conteggio_merce_spedita_porto;
-            porto_offerto_maggiore = i+1;
-        }
-        if(porto_richiesto_maggiore_conto < informazioni_porto[i].conteggio_merce_ricevuta_porto){
-            porto_richiesto_maggiore_conto = informazioni_porto[i].conteggio_merce_ricevuta_porto;
-            porto_richiesto_maggiore = i+1;
-        }
-    }
-
-    /*fflush(stdout); /*svuoto il buffer dello standard output*/
-   
-    /*print del porto che ha offerto quantita maggiore di merce*/
-    /*if(porto_offerto_maggiore_conto == 0){
-        printf("\nIl porto che ha offerto la quantita' maggiore di merce e': nessun porto ha offerto merce\n");
-    }else{
-        printf("\nIl porto che ha offerto la quantita' maggiore di merce e': %d\n", porto_offerto_maggiore);
-    }
-    if(porto_richiesto_maggiore_conto == 0){
-        printf("Il porto che ha richiesto la quantita' maggiore di merce e': nessun porto ha richiesto merce\n"); 
-    }else{
-        printf("Il porto che ha richiesto la quantita' maggiore di merce e': %d\n", porto_richiesto_maggiore);
-    }
-
-    fflush(stdout); /*svuoto il buffer dello standard output*//*
-}*/
 
 #endif
