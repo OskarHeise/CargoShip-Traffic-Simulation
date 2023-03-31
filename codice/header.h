@@ -47,7 +47,7 @@ int conteggio_navi_con_carico;
 int conteggio_navi_senza_carico;
 int conteggio_navi_nel_porto;
 
-const char *semaforo_banchine_nome = "/semaforo_banchine";
+char *semaforo_banchine_nome = "/semaforo_banchine";
 const char *semaforo_nome = "/semaforo";
 
 struct struct_merce{
@@ -655,30 +655,6 @@ int ricerca_binaria(struct struct_porto *shared_memory_porto, int inizio, int fi
     }
 }
 
-int calcolo_porto_piu_vicino(double posizione_nave_X, double posizione_nave_Y, struct struct_porto *shared_memory_porto){
-    /*cattura delle variabili*/
-    FILE* config_file;
-    int so_porti;
-
-    config_file = fopen("config.txt", "r");
-     if (config_file == NULL) {
-        printf("Errore nell'apertura del file\n");
-        
-    }
-    while (!feof(config_file)) {
-        char name[20];
-        int value;
-        fscanf(config_file, "%19[^=]=%d\n", name, &value);
-        if (strcmp(name, "SO_PORTI") == 0) {
-            so_porti = value;
-        }
-    }
-
-    fclose(config_file);
-
-    return ricerca_binaria(shared_memory_porto, 0, so_porti - 1, posizione_nave_X, posizione_nave_Y, so_porti);
-}
-
 
 /*generatore del tempo di sosta della nave nel porto*/
 void tempo_sosta_porto(int dimensione_merce){
@@ -736,7 +712,7 @@ int ricerca_binaria_porto(int id_merce, struct struct_porto *shared_memory_porto
     int num_porti_validi = 0;
     int i;
     int index_porto_casuale;
-    int indici_porti_validi[1000];
+    int indici_porti_validi[100000];
 
     /* Trova tutti i porti validi */
     for (i = 0; i < num_porti; i++){

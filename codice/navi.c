@@ -2,6 +2,8 @@
 
 int main(){   
     sem_t *semaforo_master;
+    sem_t **semaforo_banchine;
+    struct timespec timeout; /*per evitare che il processo rimanga fermo all'infinito a causa del semaforo delle banchine*/
     int indirizzo_attachment_shared_memory_porto;
     int indirizzo_attachment_shared_memory_scadenze_statistiche;
     int indirizzo_attachment_shared_memory_nave;
@@ -14,6 +16,8 @@ int main(){
     int tappe_nei_porti;
     int prossima_tappa; /*indice del porto in cui recarsi*/
     int tappa_precedente;
+    int i;
+    int value;
 
     /*cattura delle variabili*/
     FILE* config_file;
@@ -50,7 +54,7 @@ int main(){
     /*segnale*/
     signal(SIGUSR1, handle_ready);
 
-    /*aprertura semaforo*/
+    /*aprertura semaforo generale*/
     semaforo_master = sem_open(semaforo_nome, O_RDWR);
 
     /*setto la tappa precedente, in questo caso -1 perchè non abbiamo ancora iniziato*/
@@ -74,6 +78,16 @@ int main(){
     indirizzo_attachment_shared_memory_giorni = memoria_condivisa_get(SHM_KEY_GIORNO,  sizeof(struct struct_giorni), SHM_W);
     shared_memory_giorni = (struct struct_giorni*)shmat(indirizzo_attachment_shared_memory_giorni, NULL, 0);
 
+    /*settaggio semaforo banchine*/
+    semaforo_banchine = malloc(sizeof(sem_t) * so_porti);
+    clock_gettime(CLOCK_REALTIME, &timeout);
+    timeout.tv_sec += so_days;
+    for(i = 0; i < so_porti; i++){
+        sem_unlink(semaforo_banchine_nome);
+        semaforo_banchine[i] = sem_open(semaforo_banchine_nome, O_CREAT, 0666, shared_memory_porto[i].numero_banchine_libere);
+        sem_timedwait((sem_t*)&semaforo_banchine[i], &timeout);
+    }
+
     /*salvo lo status della nave*/
     shared_memory_nave[getpid() - getppid() - so_porti - 1] = nave; 
     sem_post(semaforo_master); 
@@ -81,7 +95,6 @@ int main(){
     /*gestione ripartenza*/
     kill(getppid(), SIGUSR1);
     pause();  
-
 
 
 
@@ -127,6 +140,8 @@ int main(){
             tempo_spostamento_nave(distanza_nave_porto(nave.posizione_nave_X, nave.posizione_nave_Y, shared_memory_porto[prossima_tappa].posizione_porto_X , shared_memory_porto[prossima_tappa].posizione_porto_Y));
             /*ora sono arrivato al porto e posso iniziare le operazioni di carico e di scarico delle merci*/
 
+            /*aggiorno il semaforo che si occupa delle banchine*/
+            sem_wait(semaforo_banchine[prossima_tappa]);
 
             /*aggiorno la posizione*/
             shared_memory_scadenze_statistiche->navi_con_carico[getpid() - getppid() - so_porti - 1] = 0;
@@ -136,6 +151,8 @@ int main(){
             /*aggiorno le coordinate delle navi*/
             nave.posizione_nave_Y = shared_memory_porto[prossima_tappa].posizione_porto_Y;
             nave.posizione_nave_X = shared_memory_porto[prossima_tappa].posizione_porto_X;
+
+            sem_post(semaforo_banchine[prossima_tappa]);
 
             /*tempo in cui sto fermo nel porto*/
             tempo_sosta_porto(nave.merce_nave.dimensione_merce);
@@ -170,6 +187,9 @@ int main(){
 
     fflush(stdout);
 
+    for(i = 0; i < so_porti; i++){
+        sem_close(semaforo_banchine[i]);
+    }
     sem_close(semaforo_master);
     exit(EXIT_SUCCESS);
     
