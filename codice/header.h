@@ -4,6 +4,7 @@
 #define _GNU_SOURCE
 
 /*lista delle librerie utilizzate*/
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<unistd.h>
@@ -24,17 +25,18 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 
+/*lista delle costanti utilizzate*/
+
 #define SHM_KEY_MERCE 1234
 #define SHM_KEY_PORTO 1236
 #define SHM_KEY_NAVE 7896
 #define SHM_KEY_CONTEGGIO 7845
 #define SHM_KEY_SEM 6789
 #define SHM_KEY_GIORNO 2002
-#define SEM_KEY 9876 
-#define MSG_KEY 2367
-#define SEM_VAL 0
 
 
+
+/*variabili globali utilizzate*/
 
 int shared_memory_id_conteggio_nave;
 int numero_giorno;
@@ -47,8 +49,17 @@ int conteggio_navi_con_carico;
 int conteggio_navi_senza_carico;
 int conteggio_navi_nel_porto;
 
+
+
+/*chiavi dei semafori*/
+
 char *semaforo_banchine_nome = "/semaforo_banchine";
 const char *semaforo_nome = "/semaforo";
+
+
+
+
+/*strutture impiegate per lo sviluppo del progetto*/
 
 struct struct_merce{
     int id_merce; /*genero la tipologia di merce con un ID numerico*/
@@ -111,19 +122,146 @@ struct struct_giorni{
 };
 
 
-/*
-######################################
-######################################
-######################################
-            LE FUNZIONI
-######################################
-######################################
-######################################
-*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*FIRME DELLE FUNZIONI*/
 
 /*genera casualmente l'ID della merce*/
+int generatore_id_merce();
+
+/*genera casualmente dimensione esatta delle merci*/
+int generatore_dimensione_merce();
+
+/*genera casualmente il tempo di vita delle merci*/
+int generatore_tempo_vita_merce();
+
+/*genero casualmente il numero di lotti di merce*/
+int generatore_lotti_merce();
+
+/*creo una nuova memoria condivisa*/
+int memoria_condivisa_creazione(key_t key, size_t grandezza_memoria);
+
+/*utilizzo una nuova memoria condivisa*/
+int memoria_condivisa_get(key_t key, size_t grandezza_memoria, int mode);
+
+/*dealloco una memoria condivisa già esistente*/
+void memoria_condivisa_deallocazione(int id);
+
+/*genera casualmente la posizione iniziale della nave, e restituisce un puntatore di array*/
+double *generatore_posizione_iniziale_nave();
+
+/*calcola la distanza della nave da un porto*/
+double distanza_nave_porto(double posizione_nave_X, double posizione_nave_Y, double posizione_porto_X, double posizione_porto_Y);
+
+/*restituisce lo spostamento della nave giorno per giorno*/
+double spostamento_nave(double *posizione_nave, double posizione_porto_X, double posizione_porto_Y);
+
+/*genera casualmente la posizione iniziale del porto*/
+double *generatore_posizione_iniziale_porto(pid_t pid, pid_t parent_pid);
+
+/*generatore del numero di banchine del porto*/
+double generatore_banchine_porto();
+
+/*generatore della capacita massima delle navi*/
+int generatore_capacita_nave();
+
+/*generatore dell'id della merce offerta*/
+int generatore_merce_offerta_id();
+
+/*generatore della quantita della merce offerta*/
+int generatore_merce_offerta_quantita(int merce_richiesta_quantita);
+
+/*generatore dell'id della merce richiesta*/
+int generatore_merce_richiesta_id();
+
+/*generatore della quantita della merce richiesta*/
+int generatore_merce_richiesta_quantita();
+
+/*creazione coda di messaggi*/
+int coda_messaggi_creazione(key_t key);
+
+/*gestione coda di messaggi*/
+int coda_messaggi_get_id(key_t key);
+
+/*deallocazione coda di messaggi*/
+void coda_messaggi_deallocazione(int coda_messaggi_id);
+
+/*restituisce il tempo totale dello spostamento della nave da nave a porto*/
+void tempo_spostamento_nave(double distanza_minima_temporanea);
+
+/*ricerca del porto in cui sbarcare*/
+int ricerca_binaria(struct struct_porto *shared_memory_porto, int inizio, int fine, double posizione_nave_X, double posizione_nave_Y, int so_porti);
+int ricerca_binaria_porto(int id_merce, struct struct_porto *shared_memory_porto, int num_porti, int id_porto_precedente);
+
+/*generatore del tempo di sosta della nave nel porto*/
+void tempo_sosta_porto(int dimensione_merce);
+
+/*gestione del segnale per i procesi figli*/
+void handle_child(int sig);
+
+/*i processi figli sono pronti*/
+void handle_ready(int sig);
+
+/*generazione della chiave del semaforo delle banchine*/
+char** generatore_semaforo_banchine_nome(int so_porti);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*FUNZIONI*/
+
 int generatore_id_merce(){
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_merci;
 
@@ -151,9 +289,8 @@ int generatore_id_merce(){
     }
 }
 
-/*genera casualmente dimensione esatta delle merci*/
 int generatore_dimensione_merce(){
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_size;
 
@@ -176,9 +313,8 @@ int generatore_dimensione_merce(){
     return rand()%(so_size -1 + 1) + 1;;
 }
 
-/*genera casualmente il tempo di vita delle merci*/
 int generatore_tempo_vita_merce(){ 
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int max_vita;
     int min_vita;
@@ -205,7 +341,6 @@ int generatore_tempo_vita_merce(){
     return rand()%(max_vita - min_vita +1) + min_vita;
 }
 
-/*genero casualmente il numero di lotti di merce*/
 int generatore_lotti_merce(){
     return rand()%10+2;
 }
@@ -233,24 +368,15 @@ int memoria_condivisa_get(key_t key, size_t grandezza_memoria, int mode){
     return id;
 }
 
-int memoria_condivisa_get_id(key_t key, size_t grandezza_memoria){
-    int id = shmget(key, grandezza_memoria, 0666);
-    if(id == -1){
-        printf("Errore, non esiste una memoria condivisa associata alla key! Error number = %d\n", errno);
-    }
-    return id;
-}
-
 void memoria_condivisa_deallocazione(int id){
     shmdt(&id);
     shmctl(id, IPC_RMID, NULL);
 }
 
-/*genera casualmente la posizione iniziale della nave, e restituisce un puntatore di array*/
 double *generatore_posizione_iniziale_nave(){
     double *coordinate_generate;
 
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_lato;
 
@@ -275,12 +401,10 @@ double *generatore_posizione_iniziale_nave(){
     return coordinate_generate;
 }
 
-/*calcola la distanza della nave da un porto*/
 double distanza_nave_porto(double posizione_nave_X, double posizione_nave_Y, double posizione_porto_X, double posizione_porto_Y){
     return hypot(posizione_porto_X - posizione_nave_X, posizione_porto_Y - posizione_nave_Y);
 }
 
-/*restituisce lo spostamento della nave giorno per giorno*/
 double spostamento_nave(double *posizione_nave, double posizione_porto_X, double posizione_porto_Y){
     double elemento_x1;
     double elemento_y1;
@@ -290,7 +414,7 @@ double spostamento_nave(double *posizione_nave, double posizione_porto_X, double
     double numeratore_con_radice;
     double risultato;
 
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_speed;
 
@@ -321,12 +445,11 @@ double spostamento_nave(double *posizione_nave, double posizione_porto_X, double
     return risultato;
 }
 
-/*genera casualmente la posizione iniziale del porto*/
 double *generatore_posizione_iniziale_porto(pid_t pid, pid_t parent_pid){  
     double *coordinate_generate;
     int dato;
 
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_lato;
 
@@ -378,11 +501,10 @@ double *generatore_posizione_iniziale_porto(pid_t pid, pid_t parent_pid){
     return coordinate_generate;
 }
 
-/*generatore del numero di banchine del porto*/
 double generatore_banchine_porto(){
     int numero_randomico;
 
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_banchine;
 
@@ -406,11 +528,10 @@ double generatore_banchine_porto(){
     return numero_randomico;
 }
 
-/*generatore della capacita massima delle navi*/
 int generatore_capacita_nave(){
     int numero_randomico;
 
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_capacity;
 
@@ -434,9 +555,8 @@ int generatore_capacita_nave(){
     return numero_randomico;
 }
 
-/*generatore dell'id della merce offerta*/
 int generatore_merce_offerta_id(){
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_merci;
 
@@ -463,11 +583,10 @@ int generatore_merce_offerta_id(){
     }
 }
 
-/*generatore della quantita della merce offerta*/
 int generatore_merce_offerta_quantita(int merce_richiesta_quantita){
     int numero_randomico;
 
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_fill, so_porti;
 
@@ -494,9 +613,8 @@ int generatore_merce_offerta_quantita(int merce_richiesta_quantita){
     return numero_randomico;
 }
 
-/*generatore dell'id della merce richiesta*/
 int generatore_merce_richiesta_id(){
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_merci;
 
@@ -525,11 +643,10 @@ int generatore_merce_richiesta_id(){
     }
 }
 
-/*generatore della quantita della merce richiesta*/
 int generatore_merce_richiesta_quantita(){
     int numero_randomico;
 
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_fill, so_porti;
 
@@ -556,7 +673,6 @@ int generatore_merce_richiesta_quantita(){
     return numero_randomico;
 }
 
-/*gestione dei messaggi*/
 int coda_messaggi_creazione(key_t key){
     int risultato = msgget(key, IPC_CREAT | IPC_EXCL | 0666);
 
@@ -586,12 +702,11 @@ void coda_messaggi_deallocazione(int coda_messaggi_id){
     }
 }
 
-/*restituisce il tempo totale dello spostamento della nave da nave a porto*/
 void tempo_spostamento_nave(double distanza_minima_temporanea){
     float nave_spostamento_nanosleep;
     struct timespec request;
 
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_speed;
 
@@ -656,12 +771,11 @@ int ricerca_binaria(struct struct_porto *shared_memory_porto, int inizio, int fi
 }
 
 
-/*generatore del tempo di sosta della nave nel porto*/
 void tempo_sosta_porto(int dimensione_merce){
     float tempo_sosta_porto_nanosleep;
     struct timespec remaining, request;
 
-    /*cattura delle variabili*/
+    
     FILE* config_file;
     int so_speed;
 
@@ -690,7 +804,6 @@ void tempo_sosta_porto(int dimensione_merce){
     }
 }
 
-/*gestione segnale*/
 void handle_child(int sig){
     int status;
     pid_t child;
@@ -705,7 +818,6 @@ void handle_ready(int sig) {
     /* invia il segnale SIGUSR1 al processo padre */
     kill(getppid(), SIGUSR1);
 }
-
 
 int ricerca_binaria_porto(int id_merce, struct struct_porto *shared_memory_porto, int num_porti, int id_porto_precedente){
     int index_porto_scelto = -1;
