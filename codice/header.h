@@ -738,4 +738,15 @@ int ricerca_binaria_porto(int id_merce, struct struct_porto *shared_memory_porto
     return index_porto_scelto;
 }
 
+char** generatore_semaforo_banchine_nome(int so_porti){
+    int i;
+    char ** array_risultato;
+
+    for(i = 0; i < so_porti; i++){
+        array_risultato[i] = malloc(sizeof(char) * 1000);
+        snprintf(array_risultato[i], 10000, "%s_%d_%d", "semaforo_banchine", getpid(), i);
+    }
+    return array_risultato;
+}
+
 #endif

@@ -13,6 +13,7 @@ int main(){
     struct struct_nave *shared_memory_nave;
     struct struct_giorni *shared_memory_giorni;
     double *coordinate_temporanee;
+    char **semaforo_banchine_array_nome;
     int tappe_nei_porti;
     int prossima_tappa; /*indice del porto in cui recarsi*/
     int tappa_precedente;
@@ -82,9 +83,9 @@ int main(){
     semaforo_banchine = malloc(sizeof(sem_t) * so_porti);
     clock_gettime(CLOCK_REALTIME, &timeout);
     timeout.tv_sec += so_days;
+    semaforo_banchine_array_nome = generatore_semaforo_banchine_nome(so_porti);
     for(i = 0; i < so_porti; i++){
-        sem_unlink(semaforo_banchine_nome);
-        semaforo_banchine[i] = sem_open(semaforo_banchine_nome, O_CREAT, 0666, shared_memory_porto[i].numero_banchine_libere);
+        semaforo_banchine[i] = sem_open(semaforo_banchine_array_nome[i], O_CREAT, 0666, shared_memory_porto[i].numero_banchine_libere);
         sem_timedwait((sem_t*)&semaforo_banchine[i], &timeout);
     }
 
@@ -189,6 +190,7 @@ int main(){
 
     for(i = 0; i < so_porti; i++){
         sem_close(semaforo_banchine[i]);
+        
     }
     sem_close(semaforo_master);
     exit(EXIT_SUCCESS);
