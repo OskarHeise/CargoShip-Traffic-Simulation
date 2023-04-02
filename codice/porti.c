@@ -50,6 +50,8 @@ int main(int argc, char **argv){
     porto.posizione_porto_Y = temp_posizione_porto[1];
     porto.numero_banchine_libere = generatore_banchine_porto();
     porto.numero_lotti_merce = generatore_lotti_merce();
+    generatore_semaforo_banchine_nome(getpid(), porto.semaforo_banchine_nome);
+    porto.semaforo_banchine = sem_open(porto.semaforo_banchine_nome, O_CREAT, 0666, porto.numero_banchine_libere);
     porto.conteggio_merce_ricevuta_porto = 0;
     porto.conteggio_merce_spedita_porto = 0;
     porto.pid_porto = getpid();    
@@ -58,10 +60,10 @@ int main(int argc, char **argv){
     indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto) * so_porti, SHM_W);
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
     shared_memory_porto[(getpid() - getppid())-1] = porto;
-    indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
-    shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0);
 
     /*aggiornamento statistica*/
+    indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
+    shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0); 
     shared_memory_scadenze_statistiche->merce_generata_inizialmente[porto.merce_offerta_id] += porto.merce_offerta_quantita;
 
     sem_post(semaforo_master);

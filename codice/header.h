@@ -52,8 +52,6 @@ int conteggio_navi_nel_porto;
 
 
 /*chiavi dei semafori*/
-
-char *semaforo_banchine_nome = "/semaforo_banchine";
 const char *semaforo_nome = "/semaforo";
 
 
@@ -92,6 +90,9 @@ struct struct_porto{
 
     int conteggio_merce_spedita_porto; 
     int conteggio_merce_ricevuta_porto;
+
+    sem_t *semaforo_banchine;
+    char semaforo_banchine_nome[1000];
 };
 
 struct struct_tempo_spostamento{
@@ -234,7 +235,7 @@ void handle_child(int sig);
 void handle_ready(int sig);
 
 /*generazione della chiave del semaforo delle banchine*/
-char** generatore_semaforo_banchine_nome(int so_porti);
+void generatore_semaforo_banchine_nome(int pid, char *nome_risultato);
 
 
 
@@ -850,15 +851,9 @@ int ricerca_binaria_porto(int id_merce, struct struct_porto *shared_memory_porto
     return index_porto_scelto;
 }
 
-char** generatore_semaforo_banchine_nome(int so_porti){
-    int i;
-    char ** array_risultato;
 
-    for(i = 0; i < so_porti; i++){
-        array_risultato[i] = malloc(sizeof(char) * 1000);
-        snprintf(array_risultato[i], 10000, "%s_%d_%d", "semaforo_banchine", getpid(), i);
-    }
-    return array_risultato;
+void generatore_semaforo_banchine_nome(int pid, char *nome_risultato){
+    snprintf(nome_risultato, 100000, "%s_%d", "sem", pid); 
 }
 
 #endif
