@@ -2,8 +2,8 @@
 
 void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_porti, struct struct_porto *shared_memory_porto, struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche, int so_navi){
     int somma_merci_disponibili;
-    int navi_con_carico, navi_senza_carico, navi_nel_porto;
-    int i,j;
+    int navi_con_carico, navi_senza_carico, navi_nel_porto, totale_merce_disponibile, lotti_totali;
+    int i,j,k;
     FILE *fp;
 
     /*reset giornalieri*/
@@ -11,6 +11,8 @@ void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_port
     navi_con_carico = 0;
     navi_senza_carico = 0;
     navi_nel_porto = 0;
+    totale_merce_disponibile = 0;
+    lotti_totali = 0;
 
     /*conta stats navi*/
     for(i = 0; i < so_navi; i++){
@@ -30,9 +32,7 @@ void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_port
 
     for(i = 0; i < so_merci; i++){
         for(j = 0; j < so_porti; j++){
-            if(i == shared_memory_porto[j].merce_offerta_id){
-                somma_merci_disponibili +=  shared_memory_porto[j].merce_offerta_quantita * shared_memory_porto[j].numero_lotti_merce;
-            }
+            if(shared_memory_porto[j].numero_lotti_merce[i] > 0) somma_merci_disponibili +=  shared_memory_porto[j].merce_offerta_quantita[i] * shared_memory_porto[j].numero_lotti_merce[i];
         } 
         fprintf(fp, "\t- Tipologia %d:\n", i); 
         fprintf(fp, "\t\tDisponibile: %10d tonnellate\n", somma_merci_disponibili);
@@ -47,11 +47,18 @@ void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_port
                                                                         
     fprintf(fp, "\nPorti:\n");
     for(i = 0; i < so_porti; i++){
+        for(j = 0; j < so_merci; j++){
+            if(shared_memory_porto[i].numero_lotti_merce[j] > 0) {totale_merce_disponibile += shared_memory_porto[i].merce_offerta_quantita[j] * shared_memory_porto[i].numero_lotti_merce[j];} /*FIXARE QUA QUALCOSA STRANO*/
+            lotti_totali += shared_memory_porto[i].numero_lotti_merce[j];
+        }
         fprintf(fp, "\t- Numero porto: %d\n", i); 
-        fprintf(fp, "\t\tMerce disponibile:         %10d tonnellate\n", shared_memory_porto[i].merce_offerta_quantita * shared_memory_porto[i].numero_lotti_merce);
+        fprintf(fp, "\t\tMerce disponibile:         %10d tonnellate\n", totale_merce_disponibile);
         fprintf(fp, "\t\tMerce spedita e ricevuta:  %10d tonnellate, %10d tonnellate\n", shared_memory_porto[i].conteggio_merce_spedita_porto, shared_memory_porto[i].conteggio_merce_ricevuta_porto);
         fprintf(fp, "\t\tNumero di banchine libere: %10d\n", shared_memory_porto[i].numero_banchine_libere);
-        fprintf(fp, "\t\tLotti rimanenti:           %10d\n", shared_memory_porto[i].numero_lotti_merce);
+        fprintf(fp, "\t\tLotti rimanenti:           %10d\n", lotti_totali);
+
+        totale_merce_disponibile = 0;
+        lotti_totali = 0;
     }
 
     fclose(fp); 
@@ -59,7 +66,7 @@ void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_port
 
 
 void stampa_report_finale(int giorni_simulazione, int so_merci, int so_porti, struct struct_porto *shared_memory_porto, struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche, int so_navi, int so_days) {
-    int somma_merci_disponibili;
+    int somma_merci_disponibili, lotti_totali;
     int porto_offerto_maggiore_conto, porto_offerto_maggiore;
     int porto_richiesto_maggiore_conto, porto_richiesto_maggiore;
     int navi_con_carico, navi_senza_carico, navi_nel_porto;
@@ -72,6 +79,7 @@ void stampa_report_finale(int giorni_simulazione, int so_merci, int so_porti, st
     navi_con_carico = 0;
     navi_senza_carico = 0;
     navi_nel_porto = 0;
+    lotti_totali = 0;
 
     /* Conta stats navi */
     for(i = 0; i < so_navi; i++) {
@@ -104,22 +112,24 @@ void stampa_report_finale(int giorni_simulazione, int so_merci, int so_porti, st
     fprintf(f, "\n");
 
     fprintf(f, "Merci:\n");
-    for(i = 0; i < so_merci; i++) {
-        for(j = 0; j < so_porti; j++) {
-            if(i == shared_memory_porto[j].merce_offerta_id) {
-                somma_merci_disponibili += shared_memory_porto[j].merce_offerta_quantita * shared_memory_porto[j].numero_lotti_merce;
-            }
-        }
-
-        fprintf(f, "\tTipologia: %d -> Disponibile: %d tonnellate & Consegnata: %d tonnellate\n", i, somma_merci_disponibili, shared_memory_scadenze_statistiche->merce_consegnata[i]);
-        fprintf(f, "\t\tTonnellate di merce iniziale: %d\n", shared_memory_scadenze_statistiche->merce_generata_inizialmente[i]);
-        fprintf(f, "\t\tTonnellate rimaste nel porto: %d & Scadute nel porto: %d & Scadute nella nave: %d & Consegnata da qualche nave: %d\n", somma_merci_disponibili, shared_memory_scadenze_statistiche->merce_scaduta_porto[i], shared_memory_scadenze_statistiche->merce_scaduta_nave[i], shared_memory_scadenze_statistiche->merce_consegnata[i]);
+    for(i = 0; i < so_merci; i++){
+        for(j = 0; j < so_porti; j++){
+            if(shared_memory_porto[j].numero_lotti_merce[i] > 0) somma_merci_disponibili +=  shared_memory_porto[j].merce_offerta_quantita[i] * shared_memory_porto[j].numero_lotti_merce[i];
+            printf("vad luntan a travallier: %d\n", shared_memory_porto[j].merce_offerta_quantita[i]);
+        } 
+        fprintf(f, "\t- Tipologia %d:\n", i); 
+        fprintf(f, "\t\tDisponibile: %10d tonnellate\n", somma_merci_disponibili);
+        fprintf(f, "\t\tConsegnata:  %10d tonnellate\n", shared_memory_scadenze_statistiche->merce_consegnata[i]); 
         somma_merci_disponibili = 0;
     }
 
     fprintf(f, "Porti:\n");
     for(i = 0 ; i < so_porti; i++) {
-        fprintf(f, "\tNumero porto: %d - Merce totale spedita e ricevuta in tonnellate: %d, %d - Numero di banchine libere: %d - Lotti rimanenti: %d\n", i, shared_memory_porto[i].conteggio_merce_spedita_porto, shared_memory_porto[i].conteggio_merce_ricevuta_porto, shared_memory_porto[i].numero_banchine_libere, shared_memory_porto[i].numero_lotti_merce);
+        for(j = 0; j < so_merci; j++){
+            lotti_totali += shared_memory_porto[i].numero_lotti_merce[j];
+        }
+        fprintf(f, "\tNumero porto: %d - Merce totale spedita e ricevuta in tonnellate: %d, %d - Numero di banchine libere: %d - Lotti rimanenti: %d\n", i, shared_memory_porto[i].conteggio_merce_spedita_porto, shared_memory_porto[i].conteggio_merce_ricevuta_porto, shared_memory_porto[i].numero_banchine_libere, lotti_totali);
+        lotti_totali = 0;
     }
 
     for(i = 0; i < so_porti; i++) {
@@ -169,9 +179,11 @@ int main() {
     struct struct_giorni *shared_memory_giorni;
     struct struct_porto *shared_memory_porto;
     struct struct_nave *shared_memory_nave;
-    int i;
+    int i, j;
     int numero_modifiche;
-    int indice_da_modificare;
+    int indice_da_modificare, numero_merci_richieste, indice_merci_richieste;
+    int so_fill_inverso, aggiunta_parziale, numero_merci_divisione;
+
 
     /*cattura delle variabili*/
     FILE* config_file;
@@ -180,6 +192,7 @@ int main() {
     int so_merci;
     int so_porti;
     int so_navi;
+    int so_fill, max_vita, min_vita;
 
     config_file = fopen("config.txt", "r");
      if (config_file == NULL) {
@@ -201,6 +214,15 @@ int main() {
         }
         if (strcmp(name, "SO_NAVI") == 0) {
             so_navi = value;
+        }
+        if (strcmp(name, "SO_FILL") == 0) {
+            so_fill = value;
+        }
+        if (strcmp(name, "MAX_VITA") == 0) {
+            max_vita = value;
+        }
+        if (strcmp(name, "MIN_VITA") == 0) {
+            min_vita = value;
         }
     }
 
@@ -231,39 +253,54 @@ int main() {
         stampa_report_giornaliero(shared_memory_giorni->giorni, so_merci, so_porti, shared_memory_porto, shared_memory_scadenze_statistiche, so_navi); /*stampa report giornaliero*/
         sleep(1);
         printf("Simulazione... %d %%\n", (shared_memory_giorni->giorni * 100) / so_days);
+
         /*aggiornamento scadenze porto*/
         for(i = 0; i < so_porti; i++){
-            if(shared_memory_porto[i].merce_offerta_tempo_vita <= 0){
-                shared_memory_scadenze_statistiche->merce_scaduta_porto[shared_memory_porto[i].merce_offerta_id] += shared_memory_porto[i].merce_offerta_quantita;
-                shared_memory_porto[i].merce_offerta_id = -1;
-                shared_memory_porto[i].merce_offerta_quantita = 0;
-            }else{
-                shared_memory_porto[i].merce_offerta_tempo_vita--;
+            for(j = 0; j < so_merci; j++){
+                if(shared_memory_porto[i].merce_offerta_tempo_vita[j] <= 0){
+                    shared_memory_scadenze_statistiche->merce_scaduta_porto[j] += shared_memory_porto[i].merce_offerta_quantita[j];
+                    shared_memory_porto[i].merce_offerta_quantita[j] = 0;
+                }else{
+                    shared_memory_porto[i].merce_offerta_tempo_vita[j] -= 1;
+                }
             }
         }
 
         /*aggiornamento generazione merce nei porti*/
-        numero_modifiche = so_porti / 3;
-        for(i = 0; i < numero_modifiche; i++){
-            indice_da_modificare = rand() % so_porti;
-            do{
-                shared_memory_porto[indice_da_modificare].merce_richiesta_id = generatore_merce_richiesta_id();
-                shared_memory_porto[indice_da_modificare].merce_richiesta_quantita = generatore_merce_richiesta_quantita() / so_days;
-                shared_memory_porto[indice_da_modificare].merce_offerta_id = generatore_merce_offerta_id();
-                shared_memory_porto[indice_da_modificare].merce_offerta_quantita = generatore_merce_offerta_quantita(shared_memory_porto[i].merce_richiesta_quantita) / so_days;
-                shared_memory_porto[indice_da_modificare].merce_offerta_tempo_vita = generatore_tempo_vita_merce();
-            }while(shared_memory_porto[indice_da_modificare].merce_richiesta_id == shared_memory_porto[indice_da_modificare].merce_offerta_id);
-            shared_memory_porto[indice_da_modificare].numero_lotti_merce = generatore_lotti_merce();
+        numero_merci_richieste = rand()%(so_merci); 
+        so_fill_inverso = 0; aggiunta_parziale = 0; numero_merci_divisione = 0;
+        for(i = 0; i < numero_merci_richieste; i++){
+            indice_merci_richieste = rand()%(so_merci);
+            aggiunta_parziale = (rand()% so_fill / so_merci);
+            porto.merce_richiesta_quantita[indice_merci_richieste] += aggiunta_parziale;
+            so_fill_inverso += aggiunta_parziale;
         }
+        for(i = 0; i < so_merci; i++){
+            if(porto.merce_richiesta_quantita[i] < 1) numero_merci_divisione++;
+        }
+
+        for(i = 0; i < so_merci; i++){
+            if(porto.merce_richiesta_quantita[i] < 1){
+                porto.merce_offerta_quantita[i] = (so_fill - so_fill_inverso) / numero_merci_divisione;
+                porto.merce_offerta_tempo_vita[i] = rand()%(max_vita - min_vita )+1;
+                porto.numero_lotti_merce[i] = rand()%10+2;
+            }else{
+                porto.merce_offerta_quantita[i] = 0;
+                porto.merce_offerta_tempo_vita[i] = 0;
+                porto.numero_lotti_merce[i] = 0;
+            }
+        }
+
 
         /*aggiornamento scadenze nave*/
         for(i = 0; i < so_navi; i++){
-            if(shared_memory_nave[i].merce_nave.tempo_vita_merce <= 0){
-                shared_memory_scadenze_statistiche->merce_scaduta_nave[shared_memory_nave[i].merce_nave.id_merce] += shared_memory_nave[i].merce_nave.dimensione_merce;
-                shared_memory_nave[i].merce_nave.id_merce = -1;
-                shared_memory_nave[i].merce_nave.dimensione_merce = 0;
-            }else{
-                shared_memory_nave[i].merce_nave.tempo_vita_merce--;
+            for(j = 0; j < so_merci; j++){
+                if(shared_memory_nave[i].merce_nave.tempo_vita_merce[j] <= 0){
+                    shared_memory_scadenze_statistiche->merce_scaduta_nave[j] += shared_memory_nave[i].merce_nave.dimensione_merce[j];
+                    shared_memory_nave[i].merce_nave.dimensione_merce[j] = 0;
+                }else{
+                    shared_memory_nave[i].merce_nave.tempo_vita_merce[j]--;
+                }
             }
         }
 

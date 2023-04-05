@@ -19,11 +19,12 @@ int main(){
     int tappa_precedente;
     int i;
     int value;
+    int dimensione_nave_totale;
     char nome_semaforo[10000];
 
     /*cattura delle variabili*/
     FILE* config_file;
-    int so_navi, so_porti, so_days, so_speed;
+    int so_navi, so_porti, so_days, so_speed, so_merci, merce_caricata;
 
     config_file = fopen("config.txt", "r");
      if (config_file == NULL) {
@@ -45,6 +46,9 @@ int main(){
         }
         if (strcmp(name, "SO_SPEED") == 0) {
             so_speed = value;
+        }
+        if (strcmp(name, "SO_MERCI") == 0) {
+            so_merci = value;
         }
     }
 
@@ -70,6 +74,12 @@ int main(){
     nave.posizione_nave_X = coordinate_temporanee[0];
     nave.posizione_nave_Y = coordinate_temporanee[1];
     nave.velocita_nave = so_speed;
+
+    for(i = 0; i < so_merci; i++){
+        nave.merce_nave.dimensione_merce[i] = 0;
+        nave.merce_nave.id_merce[i] = 0;
+        nave.merce_nave.tempo_vita_merce[i] = 0;
+    }
     
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
     shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0);
@@ -89,22 +99,28 @@ int main(){
     pause();  
 
 
-    while(shared_memory_giorni->giorni <= so_days /*|| shared_memory_scadenze_statistiche->numero_porti_senza_merce == so_porti*/){
+    while(shared_memory_giorni->giorni <= so_days){
         prossima_tappa = -1;
+        dimensione_nave_totale = 0;
+        merce_caricata = 0;
+
+        for(i = 0; i < so_merci; i++){
+            dimensione_nave_totale += nave.merce_nave.dimensione_merce[i];
+        }
 
         /*aggiornamento statistiche*/
-        if(nave.merce_nave.dimensione_merce == 0){
+        if(dimensione_nave_totale == 0){
             shared_memory_scadenze_statistiche->navi_senza_carico[getpid() - getppid() - so_porti - 1] = 1;
         }else{
             shared_memory_scadenze_statistiche->navi_con_carico[getpid() - getppid() - so_porti - 1] = 1;
         }
 
         /*scelgo il porto in cui sbarcare*/
-        if(tappe_nei_porti == 0 || nave.merce_nave.dimensione_merce == 0){ /*caso in cui non ha la merce*/
+        if(tappe_nei_porti == 0 || dimensione_nave_totale == 0){ /*caso in cui non ha la merce*/
             prossima_tappa = ricerca_binaria(shared_memory_porto, 0, so_porti - 1, nave.posizione_nave_X, nave.posizione_nave_Y, so_porti);
             tappe_nei_porti++;
         }else {
-            prossima_tappa = ricerca_binaria_porto(nave.merce_nave.id_merce, shared_memory_porto, so_porti, tappa_precedente);
+            prossima_tappa = ricerca_binaria_porto(nave, shared_memory_porto, so_porti, tappa_precedente);
             tappe_nei_porti++;
         }
         /*gestire il caso in cui ha più di una tappa e non trova mai un porto in cui sbarcare, provare con 3 navi e 1 porto*/
@@ -126,7 +142,6 @@ int main(){
             if(shared_memory_porto[prossima_tappa].numero_banchine_libere > 0){
                 shared_memory_porto[prossima_tappa].numero_banchine_libere--;
             }
-
             /*aspetto che la nave arrivi al porto*/
             tempo_spostamento_nave(distanza_nave_porto(nave.posizione_nave_X, nave.posizione_nave_Y, shared_memory_porto[prossima_tappa].posizione_porto_X , shared_memory_porto[prossima_tappa].posizione_porto_Y));
             /*ora sono arrivato al porto e posso iniziare le operazioni di carico e di scarico delle merci*/
@@ -140,6 +155,7 @@ int main(){
             shared_memory_scadenze_statistiche->navi_senza_carico[getpid() - getppid() - so_porti - 1] = 0;
             shared_memory_scadenze_statistiche->navi_nel_porto[getpid() - getppid() - so_porti - 1] = 1;
 
+
             /*aggiorno le coordinate delle navi*/
             nave.posizione_nave_Y = shared_memory_porto[prossima_tappa].posizione_porto_Y;
             nave.posizione_nave_X = shared_memory_porto[prossima_tappa].posizione_porto_X;
@@ -152,17 +168,25 @@ int main(){
             tempo_sosta_porto(nave.merce_nave.dimensione_merce);
 
             /*scarico la nave*/
-            shared_memory_scadenze_statistiche->merce_consegnata[nave.merce_nave.id_merce] += nave.merce_nave.dimensione_merce;
-            shared_memory_porto[prossima_tappa].conteggio_merce_ricevuta_porto += nave.merce_nave.dimensione_merce;
-            nave.merce_nave.dimensione_merce = 0; 
+            for(i = 0; i < so_merci; i++){
+                shared_memory_porto[prossima_tappa].conteggio_merce_ricevuta_porto += nave.merce_nave.dimensione_merce[i];
+                shared_memory_scadenze_statistiche->merce_consegnata[i] += nave.merce_nave.dimensione_merce[i];
+                nave.merce_nave.dimensione_merce[i] = 0;
+            }
 
             /*carico la nave*/
-            nave.merce_nave.id_merce = shared_memory_porto[prossima_tappa].merce_offerta_id;
-            if((shared_memory_porto[prossima_tappa].merce_offerta_quantita / shared_memory_porto[prossima_tappa].numero_lotti_merce) >= nave.capacita_nave) nave.merce_nave.dimensione_merce = nave.capacita_nave;
-            else nave.merce_nave.dimensione_merce = (shared_memory_porto[prossima_tappa].merce_offerta_quantita / shared_memory_porto[prossima_tappa].numero_lotti_merce);
-            shared_memory_porto[prossima_tappa].merce_offerta_quantita -= shared_memory_porto[prossima_tappa].merce_offerta_quantita / shared_memory_porto[prossima_tappa].numero_lotti_merce;
-            shared_memory_porto[prossima_tappa].conteggio_merce_spedita_porto += nave.merce_nave.dimensione_merce;            
-            shared_memory_porto[prossima_tappa].numero_lotti_merce -= 1;
+            for(i = 0; i < so_merci; i++){
+                if(shared_memory_porto[prossima_tappa].numero_lotti_merce[i] > 0){
+                    if(merce_caricata > nave.capacita_nave){ break;}
+                    nave.merce_nave.dimensione_merce[i] = shared_memory_porto[prossima_tappa].merce_offerta_quantita[i];
+                    merce_caricata += (shared_memory_porto[prossima_tappa].merce_offerta_quantita[i]);
+                    
+                    shared_memory_porto[prossima_tappa].numero_lotti_merce[i]--;
+
+                    shared_memory_porto[prossima_tappa].conteggio_merce_spedita_porto += nave.merce_nave.dimensione_merce[i];  
+                }  
+            }
+
 
             /*lascio virtualmente il porto e libero una banchina*/
             shared_memory_porto[prossima_tappa].numero_banchine_libere++;
@@ -174,7 +198,6 @@ int main(){
 
             /*salvo nuovamente lo status della nave*/
             shared_memory_nave[getpid() - getppid() - so_porti - 1] = nave;
-
         }
     }
 

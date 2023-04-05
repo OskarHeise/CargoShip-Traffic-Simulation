@@ -7,10 +7,11 @@ int main(int argc, char **argv){
     struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche;
     double *temp_posizione_porto;
     sem_t *semaforo_master;
+    int i, numero_merci_richieste, indice_merci_richieste, so_fill_inverso, aggiunta_parziale, numero_merci_divisione;
 
     /*cattura delle variabili*/
     FILE* config_file;
-    int so_porti, so_days;
+    int so_porti, so_days, so_merci, so_fill, max_vita, min_vita, so_banchine;
 
     config_file = fopen("config.txt", "r");
      if (config_file == NULL) {
@@ -27,6 +28,21 @@ int main(int argc, char **argv){
         if (strcmp(name, "SO_DAYS") == 0) {
             so_days = value;
         }
+        if (strcmp(name, "SO_MERCI") == 0) {
+            so_merci = value;
+        }
+        if (strcmp(name, "SO_FILL") == 0) {
+            so_fill = value;
+        }
+        if (strcmp(name, "MAX_VITA") == 0) {
+            max_vita = value;
+        }
+        if (strcmp(name, "MIN_VITA") == 0) {
+            min_vita = value;
+        }
+        if (strcmp(name, "SO_BANCHINE") == 0) {
+            so_banchine = value;
+        }
     }
 
     fclose(config_file);
@@ -35,21 +51,36 @@ int main(int argc, char **argv){
     srand(getpid());
 
     /*gestione semafori*/
-    semaforo_master = sem_open(semaforo_nome, O_RDWR);
+    semaforo_master = sem_open(semaforo_nome, O_RDWR);    
 
     /*genero tutte le informazioni del porto*/
-    do{
-        porto.merce_richiesta_id = generatore_merce_richiesta_id();
-        porto.merce_richiesta_quantita = generatore_merce_richiesta_quantita() / so_days;
-        porto.merce_offerta_id = generatore_merce_offerta_id();
-        porto.merce_offerta_quantita = generatore_merce_offerta_quantita(porto.merce_richiesta_quantita) / so_days;
-        porto.merce_offerta_tempo_vita = generatore_tempo_vita_merce();
-    }while(porto.merce_richiesta_id == porto.merce_offerta_id);
+    numero_merci_richieste = rand()%(so_merci); 
+    so_fill_inverso = 0; aggiunta_parziale = 0; numero_merci_divisione = 0;
+    for(i = 0; i < numero_merci_richieste; i++){
+        indice_merci_richieste = rand()%(so_merci);
+        aggiunta_parziale = (rand()% so_fill / so_merci);
+        porto.merce_richiesta_quantita[indice_merci_richieste] += aggiunta_parziale;
+        so_fill_inverso += aggiunta_parziale;
+    }
+    for(i = 0; i < so_merci; i++){
+        if(porto.merce_richiesta_quantita[i] < 1) numero_merci_divisione++;
+    }
+
+    for(i = 0; i < so_merci; i++){
+        if(porto.merce_richiesta_quantita[i] < 1){
+            porto.merce_offerta_quantita[i] = (so_fill - so_fill_inverso) / numero_merci_divisione;
+            porto.merce_offerta_tempo_vita[i] = rand()%(max_vita - min_vita +1) + min_vita;
+            porto.numero_lotti_merce[i] = rand()%10+2;
+        }else{
+            porto.merce_offerta_quantita[i] = 0;
+            porto.merce_offerta_tempo_vita[i] = 0;
+            porto.numero_lotti_merce[i] = 0;
+        }
+    }
     temp_posizione_porto = generatore_posizione_iniziale_porto(getpid(), getppid());
     porto.posizione_porto_X = temp_posizione_porto[0];
     porto.posizione_porto_Y = temp_posizione_porto[1];
-    porto.numero_banchine_libere = generatore_banchine_porto();
-    porto.numero_lotti_merce = generatore_lotti_merce();
+    porto.numero_banchine_libere = rand()%so_banchine+2;
     generatore_semaforo_banchine_nome(getpid(), porto.semaforo_banchine_nome);
     porto.semaforo_banchine = sem_open(porto.semaforo_banchine_nome, O_CREAT, 0666, porto.numero_banchine_libere);
     porto.conteggio_merce_ricevuta_porto = 0;
@@ -64,7 +95,10 @@ int main(int argc, char **argv){
     /*aggiornamento statistica*/
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
     shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0); 
-    shared_memory_scadenze_statistiche->merce_generata_inizialmente[porto.merce_offerta_id] += porto.merce_offerta_quantita;
+    for(i = 0; i < so_merci; i++){
+        shared_memory_scadenze_statistiche->merce_generata_inizialmente[i] += porto.merce_offerta_quantita[i];
+    }
+    
 
     sem_post(semaforo_master);
     sem_close(semaforo_master);
