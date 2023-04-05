@@ -115,7 +115,6 @@ void stampa_report_finale(int giorni_simulazione, int so_merci, int so_porti, st
     for(i = 0; i < so_merci; i++){
         for(j = 0; j < so_porti; j++){
             if(shared_memory_porto[j].numero_lotti_merce[i] > 0) somma_merci_disponibili +=  shared_memory_porto[j].merce_offerta_quantita[i] * shared_memory_porto[j].numero_lotti_merce[i];
-            printf("vad luntan a travallier: %d\n", shared_memory_porto[j].merce_offerta_quantita[i]);
         } 
         fprintf(f, "\t- Tipologia %d:\n", i); 
         fprintf(f, "\t\tDisponibile: %10d tonnellate\n", somma_merci_disponibili);

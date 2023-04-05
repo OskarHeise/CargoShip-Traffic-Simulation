@@ -145,7 +145,7 @@ int main() {
 
 
     /* aspetta che tutti i processi figli terminino */
-    for (i = 0; i < so_navi + 2 - ((so_days * 24) / so_maelstrom); i++) {
+    for (i = 0; i < so_navi; i++) {
         wait(NULL);
     }
 

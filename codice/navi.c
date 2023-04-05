@@ -109,10 +109,12 @@ int main(){
         }
 
         /*aggiornamento statistiche*/
-        if(dimensione_nave_totale == 0){
+        if(dimensione_nave_totale < 1){
             shared_memory_scadenze_statistiche->navi_senza_carico[getpid() - getppid() - so_porti - 1] = 1;
+            shared_memory_scadenze_statistiche->navi_con_carico[getpid() - getppid() - so_porti - 1] = 0;
         }else{
             shared_memory_scadenze_statistiche->navi_con_carico[getpid() - getppid() - so_porti - 1] = 1;
+            shared_memory_scadenze_statistiche->navi_senza_carico[getpid() - getppid() - so_porti - 1] = 0;
         }
 
         /*scelgo il porto in cui sbarcare*/
