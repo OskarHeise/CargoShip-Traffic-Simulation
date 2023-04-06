@@ -15,6 +15,7 @@ int main() {
     sem_t *semaforo_master;
     pid_t *pid_figli; /*salvo i pid dei processi figli in un array*/
     int i,j;
+    int messaggio_id;
     char **args;
 
     /*cattura delle variabili*/
@@ -55,11 +56,12 @@ int main() {
     /*creazione semaforo e generazione merci*/
     semaforo_master = sem_open(semaforo_nome, O_CREAT, 0666, 1);
 
-    /*apertura di entrambe le memorie condivise che mi saranno utili successivamente*/
+    /*apertura di tutte le memorie condivise e la coda di messaggi che mi saranno utili successivamente*/
     indirizzo_attachment_shared_memory_nave = memoria_condivisa_creazione(SHM_KEY_NAVE,  sizeof(struct struct_nave) * so_navi);
     indirizzo_attachment_shared_memory_porto = memoria_condivisa_creazione(SHM_KEY_PORTO, sizeof(struct struct_porto) * so_porti);
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_creazione(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche));
     indirizzo_attachment_shared_memory_giorni = memoria_condivisa_creazione(SHM_KEY_GIORNO,  sizeof(struct struct_giorni));
+    messaggio_id = coda_messaggi_creazione(MSG_KEY);
 
     printf("\n\n\n");    
 
@@ -143,14 +145,19 @@ int main() {
             break;
     }
 
+    if("CIAO")
 
-    /* aspetta che tutti i processi figli terminino */
-    for (i = 0; i < so_navi; i++) {
-        wait(NULL);
+
+    /*aspetto il messaggio per terminare l'esecuzione del programma*/
+    while(strcmp(messaggio.messaggio_testo, "FINE") != 0){
+        messaggio_id = coda_messaggi_get_id(MSG_KEY);
+        msgrcv(messaggio_id, &messaggio, sizeof(messaggio), 1, 0);
     }
+    
 
 
     /*chiusura delle risorse IPC*/
+    msgctl(messaggio_id, IPC_RMID, NULL);
     sem_close(semaforo_master);
     sem_unlink(semaforo_nome);
     memoria_condivisa_deallocazione(indirizzo_attachment_shared_memory_giorni);

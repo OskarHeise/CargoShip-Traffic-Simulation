@@ -179,7 +179,7 @@ int main() {
     struct struct_porto *shared_memory_porto;
     struct struct_nave *shared_memory_nave;
     int i, j;
-    int numero_modifiche;
+    int numero_modifiche, messaggio_id;
     int indice_da_modificare, numero_merci_richieste, indice_merci_richieste;
     int so_fill_inverso, aggiunta_parziale, numero_merci_divisione;
 
@@ -307,7 +307,16 @@ int main() {
     }
 
     stampa_report_finale(shared_memory_giorni->giorni, so_merci, so_porti, shared_memory_porto, shared_memory_scadenze_statistiche, so_navi, so_days);
+
+    /*stampo il messaggio finale*/
     printf("\nFine caricamento, report presente nel file \"report.txt\" \n");
+
+    /*creazione coda di messaggi*/
+    messaggio_id = coda_messaggi_get_id(MSG_KEY);
+    strcpy(messaggio.messaggio_testo, "FINE");
+    messaggio.messaggio_tipo = 1;
+    msgsnd(messaggio_id, &messaggio, sizeof(messaggio), 0);
+
 
     /*termino il processo ouput*/
     exit(EXIT_SUCCESS);
