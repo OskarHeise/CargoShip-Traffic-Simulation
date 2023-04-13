@@ -21,7 +21,7 @@ int main() {
 
     /*cattura delle variabili*/
     FILE* config_file;
-    int so_navi, so_porti, so_maelstrom, so_days;
+    int so_navi, so_porti, so_maelstrom, so_days, so_merci;
 
     /*"cattura" delle variabili*/
     config_file = fopen("config.txt", "r");
@@ -46,6 +46,14 @@ int main() {
         if (strcmp(name, "SO_DAYS") == 0) {
             so_days = value;
         }
+        if (strcmp(name, "SO_MERCI") == 0) {
+            so_merci = value;
+        }
+    }
+
+    if(so_porti == 0 || so_navi == 0 || so_days == 0 || so_merci == 0){
+        perror("Errore, una delle variabili non permette il corretto funzionamento del programma!!");
+        exit(EXIT_FAILURE);
     }
 
     fclose(config_file);
@@ -84,7 +92,7 @@ int main() {
                     break;
             }
         }
-        sleep(0); /*inseriamo uno sleep(0) tra un blocco e l'altro*/
+        sleep(0); /*inserisco uno sleep(0) tra un blocco e l'altro*/
         printf("Creazione processi porto: %d/%d \n", j, so_porti);
     }
 
@@ -106,7 +114,7 @@ int main() {
                     break;
             }
         }
-        sleep(0); /*inseriamo uno sleep(0) tra un blocco e l'altro*/
+        sleep(0); /*inserisco uno sleep(0) tra un blocco e l'altro*/
         printf("Creazione processi nave: %d/%d \n", j, so_navi);
     }
 
@@ -169,5 +177,6 @@ int main() {
     memoria_condivisa_deallocazione(indirizzo_attachment_shared_memory_porto);
     memoria_condivisa_deallocazione(indirizzo_attachment_shared_memory_scadenze_statistiche);
 
+    exit(EXIT_SUCCESS);
     return 0;
 }  

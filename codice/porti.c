@@ -54,10 +54,12 @@ int main(int argc, char **argv){
     semaforo_master = sem_open(semaforo_nome, O_RDWR);    
 
     /*genero tutte le informazioni del porto*/
-    numero_merci_richieste = rand()%(so_merci); 
+    if(so_merci == 1) numero_merci_richieste = rand() % 2;
+    else numero_merci_richieste = rand()%(so_merci)+1; 
+
     so_fill_inverso = 0; aggiunta_parziale = 0; numero_merci_divisione = 0;
     for(i = 0; i < numero_merci_richieste; i++){
-        indice_merci_richieste = rand()%(so_merci);
+        indice_merci_richieste = rand()%(so_merci)+1;
         aggiunta_parziale = (rand()% so_fill / so_merci);
         porto.merce_richiesta_quantita[indice_merci_richieste] += aggiunta_parziale;
         so_fill_inverso += aggiunta_parziale;
@@ -103,5 +105,6 @@ int main(int argc, char **argv){
     sem_post(semaforo_master);
     sem_close(semaforo_master);
     exit(EXIT_SUCCESS);
+    
     return 0;
 }

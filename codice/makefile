@@ -1,11 +1,11 @@
 run: compile execute
 
 compile:
-	gcc -std=c89 -Wpedantic master.c -o master -lpthread -lm
-	gcc -std=c89 -Wpedantic porti.c -o porti -lpthread -lm
-	gcc -std=c89 -Wpedantic navi.c -o navi -lpthread -lm
-	gcc -std=c89 -Wpedantic print.c -o print -lpthread -lm
-	gcc -std=c89 -Wpedantic meteo.c -o meteo -lpthread -lm
+	gcc -std=c89 -Wpedantic master.c -o master -pthread -lm
+	gcc -std=c89 -Wpedantic porti.c -o porti -pthread -lm
+	gcc -std=c89 -Wpedantic navi.c -o navi -pthread -lm
+	gcc -std=c89 -Wpedantic print.c -o print -pthread -lm
+	gcc -std=c89 -Wpedantic meteo.c -o meteo -pthread -lm
 
 execute:
 	./master 

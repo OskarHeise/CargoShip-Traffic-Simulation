@@ -235,7 +235,7 @@ int main() {
     /*inizializzo i giorni della simulazione a 0*/
     giorni_simulazione = 1;
 
-    printf("\n\n\n\n");
+    printf("\n\n\n");
 
     /*apertura shared memory per il conteggio dei giorni*/
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
