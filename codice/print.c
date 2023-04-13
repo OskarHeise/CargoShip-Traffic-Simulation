@@ -246,7 +246,10 @@ int main() {
     shared_memory_giorni = (struct struct_giorni*)shmat(indirizzo_attachment_shared_memory_giorni, NULL, 0);
     indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO,  sizeof(struct struct_porto) * so_porti, SHM_W);
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
+
     shared_memory_giorni->giorni = giorni_simulazione;
+    printf("Simulazione... 0 %%\n");
+
 
     while (shared_memory_giorni->giorni <= so_days) {
         stampa_report_giornaliero(shared_memory_giorni->giorni, so_merci, so_porti, shared_memory_porto, shared_memory_scadenze_statistiche, so_navi); /*stampa report giornaliero*/

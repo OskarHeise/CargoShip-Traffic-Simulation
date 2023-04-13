@@ -102,8 +102,10 @@ int main(int argc, char **argv){
     }
     
 
+
     sem_post(semaforo_master);
     sem_close(semaforo_master);
+
     exit(EXIT_SUCCESS);
     
     return 0;

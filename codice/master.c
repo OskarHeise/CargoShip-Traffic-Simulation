@@ -88,14 +88,13 @@ int main() {
                     break;
                 default:
                     signal(SIGCHLD, handle_child);
-                    pause();
                     break;
             }
         }
-        sleep(0); /*inserisco uno sleep(0) tra un blocco e l'altro*/
         printf("Creazione processi porto: %d/%d \n", j, so_porti);
     }
 
+    sleep(0);
     printf("\n\n");
 
     for(i = 0; i < so_navi; i += 256){ /*incremento di 256 ad ogni blocco*/
@@ -114,10 +113,10 @@ int main() {
                     break;
             }
         }
-        sleep(0); /*inserisco uno sleep(0) tra un blocco e l'altro*/
         printf("Creazione processi nave: %d/%d \n", j, so_navi);
     }
 
+    sleep(0);
     /*attendo che tutti i processi figli (navi) inviino il segnale SIGUSR1 al padre per indicare che sono pronti.*/
     /*fermo l'esecuzione del processo padre finché non riceve un segnale, utilizzando la funzione "pause()" */
     while (num_child_ready < so_navi) {
