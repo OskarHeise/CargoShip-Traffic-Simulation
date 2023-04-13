@@ -34,10 +34,10 @@ int main(int argc, char **argv){
         if (strcmp(name, "SO_FILL") == 0) {
             so_fill = value;
         }
-        if (strcmp(name, "MAX_VITA") == 0) {
+        if (strcmp(name, "SO_MAX_VITA") == 0) {
             max_vita = value;
         }
-        if (strcmp(name, "MIN_VITA") == 0) {
+        if (strcmp(name, "SO_MIN_VITA") == 0) {
             min_vita = value;
         }
         if (strcmp(name, "SO_BANCHINE") == 0) {

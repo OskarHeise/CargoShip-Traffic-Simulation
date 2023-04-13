@@ -2,6 +2,7 @@
 
 volatile int num_child_ready;
 
+/*incrementa la variabile  num_child_ready quando viene ricevuto il segnale SIGUSR1 dal figlio.*/
 void handle_child_ready(int sig) {
     num_child_ready++;
 }
@@ -109,10 +110,13 @@ int main() {
         printf("Creazione processi nave: %d/%d \n", j, so_navi);
     }
 
-    /*gestione delle "fermate" e delle "ripartenze"*/
+    /*attendo che tutti i processi figli (navi) inviino il segnale SIGUSR1 al padre per indicare che sono pronti.*/
+    /*fermo l'esecuzione del processo padre finché non riceve un segnale, utilizzando la funzione "pause()" */
     while (num_child_ready < so_navi) {
         pause();
     }
+    /*invio il segnale SIGUSR1 a ciascun processo figlio (nave) per far partire la simulazione, utilizzando la funzione kill*/
+    /*la chiamata "usleep(100)" serve a garantire che il processo padre invia il segnale SIGUSR1 a ciascun processo figlio in modo ordinato, con una piccola pausa tra un invio e l'altro.*/
     for (i = 0; i < so_navi; i++){
         kill(pid_figli[i], SIGUSR1);
         usleep(100);

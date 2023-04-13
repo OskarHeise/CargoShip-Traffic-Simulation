@@ -322,10 +322,10 @@ int* generatore_tempo_vita_merce(int *merce_offerta_id){
         char name[20];
         int value;
         fscanf(config_file, "%19[^=]=%d\n", name, &value);
-        if (strcmp(name, "MAX_VITA") == 0) {
+        if (strcmp(name, "SO_MAX_VITA") == 0) {
             max_vita = value;
         }
-        if (strcmp(name, "MIN_VITA") == 0) {
+        if (strcmp(name, "SO_MIN_VITA") == 0) {
             min_vita = value;
         }
         if (strcmp(name, "SO_MERCI") == 0) {
@@ -743,6 +743,7 @@ void tempo_sosta_porto(int *dimensione_merce){
     }
 }
 
+/*gestisce il segnale SIGUSR1 inviato dal padre ai figli per far partire la simulazione e ferma l'esecuzione finché tutti i figli non abbiano inviato il segnale SIGUSR1*/
 void handle_child(int sig){
     int status;
     pid_t child;
@@ -753,8 +754,8 @@ void handle_child(int sig){
     }
 }
 
+/*invia al padre il segnale SIGUSR1 per indicare che il figlio è pronto*/
 void handle_ready(int sig) {
-    /* invia il segnale SIGUSR1 al processo padre */
     kill(getppid(), SIGUSR1);
 }
 
