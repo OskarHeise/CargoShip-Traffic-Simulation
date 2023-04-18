@@ -51,9 +51,8 @@ int conteggio_navi_senza_carico;
 int conteggio_navi_nel_porto;
 
 
-
 /*chiavi dei semafori*/
-const char *semaforo_nome = "/semaforo";
+const char *semaforo_nome = "/semasdssforo";
 
 
 
@@ -67,7 +66,7 @@ struct struct_merce{
 };
 
 struct struct_nave{
-    pid_t pid_nave;
+    pid_t pid_nave; /*pid del processo nave*/
     int index_nave; /*indice della nave*/
     int velocita_nave; /*velocità nave*/
     double posizione_nave_X;
@@ -117,6 +116,8 @@ struct struct_controllo_scadenze_statistiche{
     int navi_rallentate_tempesta;
     int porti_interessati_mareggiata[10000];
     int navi_affondate_maelstrom;
+
+    int conto_indice_porto;
 };
 
 struct struct_giorni{
