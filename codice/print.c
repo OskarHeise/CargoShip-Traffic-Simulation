@@ -179,8 +179,8 @@ int main() {
     struct struct_porto *shared_memory_porto;
     struct struct_nave *shared_memory_nave;
     int i, j;
-    int numero_modifiche, messaggio_id;
-    int indice_da_modificare, numero_merci_richieste, indice_merci_richieste;
+    int messaggio_id;
+    int numero_merci_richieste, indice_merci_richieste;
     int so_fill_inverso, aggiunta_parziale, numero_merci_divisione;
 
 
@@ -227,6 +227,13 @@ int main() {
 
     fclose(config_file);
 
+
+
+
+
+
+
+    /*voglio scrivere sul file*/
     fp = fopen("report.txt", "w");
 
     /*srand*/
@@ -240,17 +247,23 @@ int main() {
     /*apertura shared memory per il conteggio dei giorni*/
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
     shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0);
-    indirizzo_attachment_shared_memory_nave = memoria_condivisa_get(SHM_KEY_NAVE,  sizeof(struct struct_nave) * so_navi * 2, SHM_W);
+    indirizzo_attachment_shared_memory_nave = memoria_condivisa_get(SHM_KEY_NAVE,  sizeof(struct struct_nave) * so_navi, SHM_W);
     shared_memory_nave = (struct struct_nave*)shmat(indirizzo_attachment_shared_memory_nave, NULL, 0);
     indirizzo_attachment_shared_memory_giorni = memoria_condivisa_get(SHM_KEY_GIORNO,  sizeof(struct struct_giorni), SHM_W);
     shared_memory_giorni = (struct struct_giorni*)shmat(indirizzo_attachment_shared_memory_giorni, NULL, 0);
-    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO,  sizeof(struct struct_porto) * so_porti * 2, SHM_W);
+    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO,  sizeof(struct struct_porto) * so_porti, SHM_W);
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
 
     shared_memory_giorni->giorni = giorni_simulazione;
     printf("Simulazione... 0 %%\n");
 
 
+
+
+
+
+
+    /*gestione del tempo e del dump simulazione*/
     while (shared_memory_giorni->giorni <= so_days) {
         stampa_report_giornaliero(shared_memory_giorni->giorni, so_merci, so_porti, shared_memory_porto, shared_memory_scadenze_statistiche, so_navi); /*stampa report giornaliero*/
         sleep(1);
@@ -309,16 +322,24 @@ int main() {
         shared_memory_giorni->giorni++;
     }
 
+
+
+
+    /*stampo il report finale*/
     stampa_report_finale(shared_memory_giorni->giorni, so_merci, so_porti, shared_memory_porto, shared_memory_scadenze_statistiche, so_navi, so_days);
 
     /*stampo il messaggio finale*/
     printf("\nFine caricamento, report presente nel file \"report.txt\" \n");
 
-    /*creazione coda di messaggi*/
+
+
+    /*creazione coda di messaggi, mando il messaggio FINE al master così da terminare il programma*/
     messaggio_id = coda_messaggi_get_id(MSG_KEY);
     strcpy(messaggio.messaggio_testo, "FINE");
     messaggio.messaggio_tipo = 1;
     msgsnd(messaggio_id, &messaggio, sizeof(messaggio), 0);
+
+
 
 
     /*termino il processo ouput*/

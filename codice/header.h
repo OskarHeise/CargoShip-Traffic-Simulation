@@ -52,8 +52,7 @@ int conteggio_navi_nel_porto;
 
 
 /*chiavi dei semafori*/
-const char *semaforo_nome = "/semasdssforo";
-
+const char *semaforo_nome = "/semaforo";
 
 
 
@@ -207,6 +206,9 @@ int coda_messaggi_creazione(key_t key);
 
 /*gestione coda di messaggi*/
 int coda_messaggi_get_id(key_t key);
+
+/*attendo un messaggio dalla coda di messaggi*/
+int attesa_messaggio(int messaggio_id);
 
 /*deallocazione coda di messaggi*/
 void coda_messaggi_deallocazione(int coda_messaggi_id);

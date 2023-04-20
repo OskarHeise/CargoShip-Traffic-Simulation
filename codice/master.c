@@ -1,6 +1,6 @@
 #include "header.h"
 
-volatile int num_child_ready;
+int num_child_ready;
 
 /*incrementa la variabile  num_child_ready quando viene ricevuto il segnale SIGUSR1 dal figlio.*/
 void handle_child_ready(int sig) {
@@ -65,6 +65,15 @@ int main() {
 
     fclose(config_file);
 
+
+
+
+
+
+
+
+
+
     /*inizializzazione della variabile necessaria per la chiusura di tutti i processi nave*/
     num_child_ready = 0;
     pid_figli = realloc(pid_figli, so_navi * sizeof(pid_t));
@@ -74,13 +83,23 @@ int main() {
     value = 0;
 
     /*apertura di tutte le memorie condivise e la coda di messaggi che mi saranno utili successivamente*/
-    indirizzo_attachment_shared_memory_nave = memoria_condivisa_creazione(SHM_KEY_NAVE,  sizeof(struct struct_nave) * so_navi * 2);
-    indirizzo_attachment_shared_memory_porto = memoria_condivisa_creazione(SHM_KEY_PORTO, sizeof(struct struct_porto) * so_porti * 2);
+    indirizzo_attachment_shared_memory_nave = memoria_condivisa_creazione(SHM_KEY_NAVE,  sizeof(struct struct_nave) * so_navi);
+    indirizzo_attachment_shared_memory_porto = memoria_condivisa_creazione(SHM_KEY_PORTO, sizeof(struct struct_porto) * so_porti);
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_creazione(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche));
     indirizzo_attachment_shared_memory_giorni = memoria_condivisa_creazione(SHM_KEY_GIORNO,  sizeof(struct struct_giorni));
     messaggio_id = coda_messaggi_creazione(MSG_KEY);
 
+    /*lascio qualche spazio per facilitare la lettura*/
     printf("\n\n\n");    
+
+
+
+
+
+
+
+
+
 
     /*creazione processi porto*/
     for(i = 0; i < so_porti; i += 256){  /*incremento di 256 ad ogni blocco*/
@@ -104,6 +123,8 @@ int main() {
     waitpid(pid_processi, NULL, 0);
 
     printf("\n");
+
+    /*apro la memoria condivisa per resettare il valore di conto_indice_porto*/
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
     shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0);
     shared_memory_scadenze_statistiche->conto_indice_porto = 0;
@@ -125,7 +146,7 @@ int main() {
             }
         }
         printf("Creazione processi nave: %d/%d \n", j, so_navi);
-    }
+    }    
     
     /*attendo che tutti i processi figli (navi) inviino il segnale SIGUSR1 al padre per indicare che sono pronti.*/
     /*fermo l'esecuzione del processo padre finché non riceve un segnale, utilizzando la funzione "pause()" */
@@ -167,13 +188,17 @@ int main() {
             break;
     }
 
+
+
+
+
+
+
     /*aspetto il messaggio per terminare l'esecuzione del programma*/
     while(strcmp(messaggio.messaggio_testo, "FINE") != 0){
         messaggio_id = coda_messaggi_get_id(MSG_KEY);
         msgrcv(messaggio_id, &messaggio, sizeof(messaggio), 1, 0);
     }
-    
-
 
     /*chiusura delle risorse IPC*/
     msgctl(messaggio_id, IPC_RMID, NULL);

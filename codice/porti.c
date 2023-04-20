@@ -47,6 +47,20 @@ int main(int argc, char **argv){
 
     fclose(config_file);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /*srand*/
     srand(getpid());
 
@@ -88,10 +102,21 @@ int main(int argc, char **argv){
     porto.conteggio_merce_ricevuta_porto = 0;
     porto.conteggio_merce_spedita_porto = 0;
     porto.pid_porto = getpid();    
+
+
+
+
+
+
+
+
+
+
+
     
 
     /*inserisco le informazioni nella memoria condivisa, nella posizione giusta*/
-    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto) * so_porti * 2, SHM_W);
+    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto) * so_porti, SHM_W);
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
     shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0); 
@@ -103,13 +128,16 @@ int main(int argc, char **argv){
     for(i = 0; i < so_merci; i++){
         shared_memory_scadenze_statistiche->merce_generata_inizialmente[i] += porto.merce_offerta_quantita[i];
     }
-
     shared_memory_scadenze_statistiche->conto_indice_porto++;
 
+
+
+
+
+
+    /*aggiorno il semaforo e lo chiudo*/
     sem_post(semaforo_master);
     sem_close(semaforo_master);
-
     exit(EXIT_SUCCESS);
-    
     return 0;
 }

@@ -3,7 +3,6 @@
 int main(){   
     sem_t *semaforo_master;
     sem_t *semaforo_banchine;
-    struct timespec timeout; /*per evitare che il processo rimanga fermo all'infinito a causa del semaforo delle banchine*/
     int indirizzo_attachment_shared_memory_porto;
     int indirizzo_attachment_shared_memory_scadenze_statistiche;
     int indirizzo_attachment_shared_memory_nave;
@@ -13,14 +12,12 @@ int main(){
     struct struct_nave *shared_memory_nave;
     struct struct_giorni *shared_memory_giorni;
     double *coordinate_temporanee;
-    char **semaforo_banchine_array_nome;
     int tappe_nei_porti;
     int prossima_tappa; /*indice del porto in cui recarsi*/
     int tappa_precedente;
     int i;
     int value;
     int dimensione_nave_totale;
-    char nome_semaforo[10000];
 
     /*cattura delle variabili*/
     FILE* config_file;
@@ -54,7 +51,15 @@ int main(){
 
     fclose(config_file);
 
-    /*strand*/
+
+
+
+
+
+
+
+
+    /*srand*/
     srand(getpid());
     
     /*Invia al padre il segnale SIGUSR1 per indicare che il figlio è stato creato*/
@@ -81,11 +86,12 @@ int main(){
         nave.merce_nave.tempo_vita_merce[i] = 0;
     }
     
+    /*apro le memorie condivise*/
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
     shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0);
-    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO,  sizeof(struct struct_porto) * so_porti * 2, SHM_W);
+    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO,  sizeof(struct struct_porto) * so_porti, SHM_W);
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
-    indirizzo_attachment_shared_memory_nave = memoria_condivisa_get(SHM_KEY_NAVE,  sizeof(struct struct_nave) * so_navi * 2, SHM_W);
+    indirizzo_attachment_shared_memory_nave = memoria_condivisa_get(SHM_KEY_NAVE,  sizeof(struct struct_nave) * so_navi, SHM_W);
     shared_memory_nave = (struct struct_nave*)shmat(indirizzo_attachment_shared_memory_nave, NULL, 0);
     indirizzo_attachment_shared_memory_giorni = memoria_condivisa_get(SHM_KEY_GIORNO,  sizeof(struct struct_giorni), SHM_W);
     shared_memory_giorni = (struct struct_giorni*)shmat(indirizzo_attachment_shared_memory_giorni, NULL, 0);
@@ -101,7 +107,16 @@ int main(){
     pause();  
 
 
+
+
+
+
+
+
+
+    /*inizo della simulazione vera e propria*/
     while(shared_memory_giorni->giorni <= so_days){
+        /*reset dei parametri*/
         prossima_tappa = -1;
         dimensione_nave_totale = 0;
         merce_caricata = 0;
@@ -123,22 +138,21 @@ int main(){
         if(tappe_nei_porti == 0 || dimensione_nave_totale == 0){ /*caso in cui non ha la merce*/
             prossima_tappa = ricerca_binaria(shared_memory_porto, 0, so_porti - 1, nave.posizione_nave_X, nave.posizione_nave_Y, so_porti);
             tappe_nei_porti++;
-        }else {
+        }else { /*caso in cui ho della merce a bordo*/
             prossima_tappa = ricerca_binaria_porto(nave, shared_memory_porto, so_porti, tappa_precedente);
             tappe_nei_porti++;
         }
-        /*gestire il caso in cui ha più di una tappa e non trova mai un porto in cui sbarcare, provare con 3 navi e 1 porto*/
         tappa_precedente = prossima_tappa;
 
-        /*forse questo è da rimuovere*/
-        if(prossima_tappa >= so_porti){ /*non ha trovato alcun porto*/
+        /*caso in cui non ho trovato alcun porto*/
+        if(prossima_tappa >= so_porti){ 
             prossima_tappa = -1;
         }
 
         /*ora distinguo i casi in cui trova il porto rispetto a quando non lo trova*/
         if(prossima_tappa <= -1){
-            /*significa che non ho trovato il porto, quindi non faccio niente*/
-            sleep(1);
+            /*significa che non ho trovato il porto, quindi non faccio niente e aspetto 0,1 secondi prima di cercarne un'altro*/
+            usleep(100000);
         }else if(prossima_tappa > -1){
             /*significa che ho trovato un porto disponibile, e mi dirigo verso di esso*/
 
@@ -158,7 +172,6 @@ int main(){
             shared_memory_scadenze_statistiche->navi_con_carico[getpid() - getppid() - so_porti - 1] = 0;
             shared_memory_scadenze_statistiche->navi_senza_carico[getpid() - getppid() - so_porti - 1] = 0;
             shared_memory_scadenze_statistiche->navi_nel_porto[getpid() - getppid() - so_porti - 1] = 1;
-
 
             /*aggiorno le coordinate delle navi*/
             nave.posizione_nave_Y = shared_memory_porto[prossima_tappa].posizione_porto_Y;
@@ -191,14 +204,13 @@ int main(){
                 }  
             }
 
-
             /*lascio virtualmente il porto e libero una banchina*/
             shared_memory_porto[prossima_tappa].numero_banchine_libere++;
-            /*aggiorno la posizione*/
+
+            /*aggiorno la statistica della posizione*/
             shared_memory_scadenze_statistiche->navi_con_carico[getpid() - getppid() - so_porti - 1] = 1;
             shared_memory_scadenze_statistiche->navi_senza_carico[getpid() - getppid() - so_porti - 1] = 0;
             shared_memory_scadenze_statistiche->navi_nel_porto[getpid() - getppid() - so_porti - 1] = 0;
-
 
             /*salvo nuovamente lo status della nave*/
             shared_memory_nave[nave.index_nave] = nave;
@@ -206,6 +218,14 @@ int main(){
     }
 
 
+
+
+
+
+
+
+
+    /*chiudo il semaforo master e quello dedito alle banchine*/
     fflush(stdout);
     for(i = 0; i < so_porti; i++){
         sem_close(shared_memory_porto[i].semaforo_banchine);

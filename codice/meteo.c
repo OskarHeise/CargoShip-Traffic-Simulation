@@ -37,14 +37,26 @@ void *thread_function_tempesta(void *arg) {
     }
     fclose(config_file);
 
+
+
+
+
+
+
     /*apertura shared memory */
-    indirizzo_attachment_shared_memory_nave = memoria_condivisa_get(SHM_KEY_NAVE,  sizeof(struct struct_nave) * so_navi * 2, SHM_W);
+    indirizzo_attachment_shared_memory_nave = memoria_condivisa_get(SHM_KEY_NAVE,  sizeof(struct struct_nave) * so_navi, SHM_W);
     shared_memory_nave = (struct struct_nave*)shmat(indirizzo_attachment_shared_memory_nave, NULL, 0);
     indirizzo_attachment_shared_memory_giorni = memoria_condivisa_get(SHM_KEY_GIORNO,  sizeof(struct struct_giorni), SHM_W);
     shared_memory_giorni = (struct struct_giorni*)shmat(indirizzo_attachment_shared_memory_giorni, NULL, 0);
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
     shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0);
 
+
+
+
+
+
+    /*gestione del meteo*/
     tempo_di_stop1 = ((float)so_storm_duration / 24)*1000000;
     tempo_di_stop2 = 1000000 - tempo_di_stop1;
 
@@ -58,8 +70,13 @@ void *thread_function_tempesta(void *arg) {
         /*fine gestione effettiva della tempesta*/
         usleep(tempo_di_stop2);
     }
-
     shared_memory_scadenze_statistiche->navi_rallentate_tempesta = (so_days * 24) / so_storm_duration;
+
+
+
+
+
+
 
     pthread_exit(NULL);
 }
@@ -100,14 +117,24 @@ void *thread_function_mareggiata(void *arg) {
     }
     fclose(config_file);
 
+
+
+
+
+
     /*apertura shared memory */
     indirizzo_attachment_shared_memory_giorni = memoria_condivisa_get(SHM_KEY_GIORNO,  sizeof(struct struct_giorni), SHM_W);
     shared_memory_giorni = (struct struct_giorni*)shmat(indirizzo_attachment_shared_memory_giorni, NULL, 0);
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
     shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0);
-    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO,  sizeof(struct struct_porto) * so_porti * 2, SHM_W);
+    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO,  sizeof(struct struct_porto) * so_porti, SHM_W);
     shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
 
+
+
+
+
+    /*gestione del meteo*/
     tempo_di_stop1 = ((float)so_swell_duration / 24)*1000000;
     tempo_di_stop2 = 1000000 - tempo_di_stop1;
 
@@ -119,6 +146,12 @@ void *thread_function_mareggiata(void *arg) {
         kill(shared_memory_porto[indice_mareggiata].pid_porto, SIGCONT);
         usleep(tempo_di_stop2);
     }
+
+
+
+
+
+
 
     pthread_exit(NULL);
 }
@@ -159,14 +192,27 @@ void *thread_function_maelstrom(void *arg) {
     }
     fclose(config_file);
 
+
+
+
+
+
+
+
+
     /*apertura shared memory */
-    indirizzo_attachment_shared_memory_nave = memoria_condivisa_get(SHM_KEY_NAVE,  sizeof(struct struct_nave) * so_navi * 2, SHM_W);
+    indirizzo_attachment_shared_memory_nave = memoria_condivisa_get(SHM_KEY_NAVE,  sizeof(struct struct_nave) * so_navi, SHM_W);
     shared_memory_nave = (struct struct_nave*)shmat(indirizzo_attachment_shared_memory_nave, NULL, 0);
     indirizzo_attachment_shared_memory_giorni = memoria_condivisa_get(SHM_KEY_GIORNO,  sizeof(struct struct_giorni), SHM_W);
     shared_memory_giorni = (struct struct_giorni*)shmat(indirizzo_attachment_shared_memory_giorni, NULL, 0);
     indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
     shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0);
 
+
+
+
+
+    /*gestione del meteo*/
     shared_memory_scadenze_statistiche->navi_affondate_maelstrom = (so_days * 24) / so_maelstrom;
     tempo_di_stop = ((float)so_maelstrom / 24)*1000000;
 
@@ -178,6 +224,13 @@ void *thread_function_maelstrom(void *arg) {
             usleep(tempo_di_stop);
         }
     }
+
+
+
+
+
+
+
 
     pthread_exit(NULL);
 }
@@ -231,6 +284,13 @@ int main() {
     }
     fclose(config_file);
 
+
+
+
+
+
+
+
     /*apertura shared memory */
     indirizzo_attachment_shared_memory_giorni = memoria_condivisa_get(SHM_KEY_GIORNO,  sizeof(struct struct_giorni), SHM_W);
     shared_memory_giorni = (struct struct_giorni*)shmat(indirizzo_attachment_shared_memory_giorni, NULL, 0);
@@ -252,7 +312,10 @@ int main() {
     }    
 
 
-    exit(EXIT_SUCCESS);
 
+
+
+
+    exit(EXIT_SUCCESS);
     return 0;
 }
