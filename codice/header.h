@@ -52,7 +52,7 @@ int conteggio_navi_nel_porto;
 
 
 /*chiavi dei semafori*/
-const char *semaforo_nome = "/semaforo";
+const char *semaforo_nome = "/sdsedssdmaforo";
 
 
 
@@ -116,6 +116,7 @@ struct struct_controllo_scadenze_statistiche{
     int porti_interessati_mareggiata[10000];
     int navi_affondate_maelstrom;
 
+    int conto_so_fill;
     int conto_indice_porto;
 };
 
@@ -221,7 +222,7 @@ int ricerca_binaria(struct struct_porto *shared_memory_porto, int inizio, int fi
 int ricerca_binaria_porto(struct struct_nave nave, struct struct_porto *shared_memory_porto, int num_porti, int id_porto_precedente);
 
 /*generatore del tempo di sosta della nave nel porto*/
-void tempo_sosta_porto(int *dimensione_merce);
+void tempo_sosta_porto(struct struct_nave nave);
 
 /*gestione del segnale per i procesi figli*/
 void handle_child(int sig);
@@ -703,7 +704,7 @@ int ricerca_binaria(struct struct_porto *shared_memory_porto, int inizio, int fi
 }
 
 
-void tempo_sosta_porto(int *dimensione_merce){
+void tempo_sosta_porto(struct struct_nave nave){
     int dimensione_totale_merce, i;
     float tempo_sosta_porto_nanosleep;
     struct timespec remaining, request;
@@ -734,7 +735,7 @@ void tempo_sosta_porto(int *dimensione_merce){
     dimensione_totale_merce = 0;
 
     for(i = 0; i < so_merci; i++){
-        dimensione_totale_merce += dimensione_merce[i];
+        dimensione_totale_merce += nave.merce_nave.dimensione_merce[i];
     }
 
     tempo_sosta_porto_nanosleep = dimensione_totale_merce/so_speed;

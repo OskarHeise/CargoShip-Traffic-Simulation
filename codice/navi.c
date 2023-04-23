@@ -182,7 +182,7 @@ int main(){
             sem_close(semaforo_banchine);
 
             /*tempo in cui sto fermo nel porto*/
-            tempo_sosta_porto(nave.merce_nave.dimensione_merce);
+            tempo_sosta_porto(nave);
 
             /*scarico la nave*/
             for(i = 0; i < so_merci; i++){

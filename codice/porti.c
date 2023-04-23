@@ -7,7 +7,7 @@ int main(int argc, char **argv){
     struct struct_controllo_scadenze_statistiche *shared_memory_scadenze_statistiche;
     double *temp_posizione_porto;
     sem_t *semaforo_master;
-    int i, numero_merci_richieste, indice_merci_richieste, so_fill_inverso, aggiunta_parziale, numero_merci_divisione;
+    int i, numero_merci_richieste, indice_merci_richieste, so_fill_inverso, aggiunta_parziale, numero_merci_divisione, so_fill_porto, valore_richiesto;
 
     /*cattura delle variabili*/
     FILE* config_file;
@@ -65,26 +65,47 @@ int main(int argc, char **argv){
     srand(getpid());
 
     /*gestione semafori*/
-    semaforo_master = sem_open(semaforo_nome, O_RDWR);        
+    semaforo_master = sem_open(semaforo_nome, O_RDWR);     
+
+    /*accedo alla memoria condivisa*/
+    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto) * so_porti, SHM_W);
+    shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
+    indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
+    shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0); 
+   
 
     /*genero tutte le informazioni del porto*/
+    if(shared_memory_scadenze_statistiche->conto_indice_porto == 0){shared_memory_scadenze_statistiche->conto_so_fill = so_fill;}
+    so_fill_porto = rand() % (shared_memory_scadenze_statistiche->conto_so_fill / so_porti) + 1;
+    shared_memory_scadenze_statistiche->conto_so_fill -= so_fill_porto;
+    
+
     if(so_merci == 1) numero_merci_richieste = rand() % 2;
     else numero_merci_richieste = rand()%(so_merci)+1; 
 
-    so_fill_inverso = 0; aggiunta_parziale = 0; numero_merci_divisione = 0;
-    for(i = 0; i < numero_merci_richieste; i++){
-        indice_merci_richieste = rand()%(so_merci)+1;
-        aggiunta_parziale = (rand()% so_fill / so_merci);
-        porto.merce_richiesta_quantita[indice_merci_richieste] += aggiunta_parziale;
-        so_fill_inverso += aggiunta_parziale;
+    aggiunta_parziale = so_fill_porto; numero_merci_divisione = 0;
+    for(i = 0; i < numero_merci_richieste  && aggiunta_parziale > 0; i++){
+        if(i == numero_merci_richieste-1){
+            indice_merci_richieste = rand()%(so_merci);
+            porto.merce_richiesta_quantita[indice_merci_richieste] += aggiunta_parziale;
+        }else{
+            indice_merci_richieste = rand()%(so_merci);
+            valore_richiesto = rand() % aggiunta_parziale;
+            aggiunta_parziale -= valore_richiesto;
+            porto.merce_richiesta_quantita[indice_merci_richieste] += (valore_richiesto);
+        }
     }
     for(i = 0; i < so_merci; i++){
         if(porto.merce_richiesta_quantita[i] < 1) numero_merci_divisione++;
     }
 
+    aggiunta_parziale = so_fill_porto; 
     for(i = 0; i < so_merci; i++){
         if(porto.merce_richiesta_quantita[i] < 1){
-            porto.merce_offerta_quantita[i] = (so_fill - so_fill_inverso) / numero_merci_divisione;
+            valore_richiesto = rand() % aggiunta_parziale; 
+            aggiunta_parziale -= valore_richiesto;
+            if(valore_richiesto == 0) porto.merce_offerta_quantita[i] = 1;
+            else porto.merce_offerta_quantita[i] = valore_richiesto; 
             porto.merce_offerta_tempo_vita[i] = rand()%(max_vita - min_vita +1) + min_vita;
             porto.numero_lotti_merce[i] = rand()%10+2;
         }else{
@@ -93,6 +114,7 @@ int main(int argc, char **argv){
             porto.numero_lotti_merce[i] = 0;
         }
     }
+
     temp_posizione_porto = generatore_posizione_iniziale_porto(getpid(), getppid());
     porto.posizione_porto_X = temp_posizione_porto[0];
     porto.posizione_porto_Y = temp_posizione_porto[1];
@@ -114,12 +136,6 @@ int main(int argc, char **argv){
 
 
     
-
-    /*inserisco le informazioni nella memoria condivisa, nella posizione giusta*/
-    indirizzo_attachment_shared_memory_porto = memoria_condivisa_get(SHM_KEY_PORTO, sizeof(struct struct_porto) * so_porti, SHM_W);
-    shared_memory_porto = (struct struct_porto*)shmat(indirizzo_attachment_shared_memory_porto, NULL, 0);
-    indirizzo_attachment_shared_memory_scadenze_statistiche = memoria_condivisa_get(SHM_KEY_CONTEGGIO, sizeof(struct struct_controllo_scadenze_statistiche), SHM_W);
-    shared_memory_scadenze_statistiche = (struct struct_controllo_scadenze_statistiche*)shmat(indirizzo_attachment_shared_memory_scadenze_statistiche, NULL, 0); 
 
     /*caricamento delle informazioni del porto in memoria condivisa*/
     shared_memory_porto[shared_memory_scadenze_statistiche->conto_indice_porto] = porto;

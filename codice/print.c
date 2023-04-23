@@ -32,7 +32,7 @@ void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_port
 
     for(i = 0; i < so_merci; i++){
         for(j = 0; j < so_porti; j++){
-            if(shared_memory_porto[j].numero_lotti_merce[i] > 0) somma_merci_disponibili +=  shared_memory_porto[j].merce_offerta_quantita[i] * shared_memory_porto[j].numero_lotti_merce[i];
+            if(shared_memory_porto[j].numero_lotti_merce[i] > 0) somma_merci_disponibili +=  shared_memory_porto[j].merce_offerta_quantita[i];
         } 
         fprintf(fp, "\t- Tipologia %d:\n", i); 
         fprintf(fp, "\t\tDisponibile: %10d tonnellate\n", somma_merci_disponibili);
@@ -48,7 +48,7 @@ void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_port
     fprintf(fp, "\nPorti:\n");
     for(i = 0; i < so_porti; i++){
         for(j = 0; j < so_merci; j++){
-            if(shared_memory_porto[i].numero_lotti_merce[j] > 0) {totale_merce_disponibile += shared_memory_porto[i].merce_offerta_quantita[j] * shared_memory_porto[i].numero_lotti_merce[j];} /*FIXARE QUA QUALCOSA STRANO*/
+            if(shared_memory_porto[i].numero_lotti_merce[j] > 0) {totale_merce_disponibile += shared_memory_porto[i].merce_offerta_quantita[j];} 
             lotti_totali += shared_memory_porto[i].numero_lotti_merce[j];
         }
         fprintf(fp, "\t- Numero porto: %d\n", i); 
@@ -114,7 +114,7 @@ void stampa_report_finale(int giorni_simulazione, int so_merci, int so_porti, st
     fprintf(f, "Merci:\n");
     for(i = 0; i < so_merci; i++){
         for(j = 0; j < so_porti; j++){
-            if(shared_memory_porto[j].numero_lotti_merce[i] > 0) somma_merci_disponibili +=  shared_memory_porto[j].merce_offerta_quantita[i] * shared_memory_porto[j].numero_lotti_merce[i];
+            if(shared_memory_porto[j].numero_lotti_merce[i] > 0) somma_merci_disponibili +=  shared_memory_porto[j].merce_offerta_quantita[i];
         } 
         fprintf(f, "\t- Tipologia %d:\n", i); 
         fprintf(f, "\t\tDisponibile: %10d tonnellate\n", somma_merci_disponibili);
@@ -181,7 +181,7 @@ int main() {
     int i, j;
     int messaggio_id;
     int numero_merci_richieste, indice_merci_richieste;
-    int so_fill_inverso, aggiunta_parziale, numero_merci_divisione;
+    int so_fill_inverso, aggiunta_parziale, numero_merci_divisione, valore_richiesto;
 
 
     /*cattura delle variabili*/
@@ -283,21 +283,29 @@ int main() {
 
         /*aggiornamento generazione merce nei porti*/
         numero_merci_richieste = rand()%(so_merci); 
-        so_fill_inverso = 0; aggiunta_parziale = 0; numero_merci_divisione = 0;
-        for(i = 0; i < numero_merci_richieste; i++){
-            indice_merci_richieste = rand()%(so_merci);
-            aggiunta_parziale = (rand()% so_fill / so_merci);
-            porto.merce_richiesta_quantita[indice_merci_richieste] += aggiunta_parziale;
-            so_fill_inverso += aggiunta_parziale;
+        aggiunta_parziale = so_fill / so_days; numero_merci_divisione = 0;
+        for(i = 0; i < numero_merci_richieste  && aggiunta_parziale > 0; i++){
+            if(i == numero_merci_richieste-1){
+                indice_merci_richieste = rand()%(so_merci);
+                porto.merce_richiesta_quantita[indice_merci_richieste] += aggiunta_parziale;
+            }else{
+                indice_merci_richieste = rand()%(so_merci);
+                valore_richiesto = rand() % aggiunta_parziale;
+                aggiunta_parziale -= valore_richiesto;
+                porto.merce_richiesta_quantita[indice_merci_richieste] += (valore_richiesto);
+            }
         }
         for(i = 0; i < so_merci; i++){
             if(porto.merce_richiesta_quantita[i] < 1) numero_merci_divisione++;
         }
-
+        aggiunta_parziale = so_fill / so_days; 
         for(i = 0; i < so_merci; i++){
             if(porto.merce_richiesta_quantita[i] < 1){
-                porto.merce_offerta_quantita[i] = (so_fill - so_fill_inverso) / numero_merci_divisione;
-                porto.merce_offerta_tempo_vita[i] = rand()%(max_vita - min_vita )+1;
+                valore_richiesto = rand() % aggiunta_parziale; 
+                aggiunta_parziale -= valore_richiesto;
+                if(valore_richiesto == 0) porto.merce_offerta_quantita[i] = 1;
+                else porto.merce_offerta_quantita[i] = valore_richiesto; 
+                porto.merce_offerta_tempo_vita[i] = rand()%(max_vita - min_vita +1) + min_vita;
                 porto.numero_lotti_merce[i] = rand()%10+2;
             }else{
                 porto.merce_offerta_quantita[i] = 0;
