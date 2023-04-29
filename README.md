@@ -1,6 +1,6 @@
 I segnali:
 
->Meccanismi utilizzati per notificare un processo dell'arrivo di un evento o di un'eccezione.
+> Meccanismi utilizzati per notificare un processo dell'arrivo di un evento o di un'eccezione.
 >Possono essere inviati da un processo a un altro o da un sistema operativo a un processo.
 >Identificati da un numero intero.
 >L'handler è una funzione che viene chiamata quando un processo riceve un segnale e consente di gestire il segnale in modo appropriato.
