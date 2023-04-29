@@ -1,36 +1,32 @@
 ------------- SEGNALI -------------
 
--Meccanismi utilizzati per notificare un processo dell'arrivo di un evento o di un'eccezione.
+- sono dei meccanismi utilizzati per notificare un processo dell'arrivo di un determinato evento o di un'eccezione.
 
--Possono essere inviati da un processo a un altro o da un sistema operativo a un processo.
+- i segnali possono essere inviati da un processo a un altro o da un sistema operativo a un processo e sono identificati da un numero intero.
 
--Identificati da un numero intero.
+- l'handler è una funzione che viene chiamata quando un processo riceve un segnale e consente di gestire il segnale nel modo che il programmatore preferisce.
 
--L'handler è una funzione che viene chiamata quando un processo riceve un segnale e consente di gestire il segnale in modo appropriato.
+- in C, si utilizza la funzione "signal()" per impostare un handler per un segnale.
 
--In C, si utilizza la funzione "signal()" per impostare un handler per un segnale.
+- la funzione "sigaction()" è una variante più avanzata di "signal()" che consente di specificare un insieme di opzioni per la gestione dei segnali.
 
--La funzione "sigaction()" è una variante più avanzata di "signal()" che consente di specificare un insieme di opzioni per la gestione dei segnali.
+- una maschera di segnali è un insieme di segnali che un processo ha deciso di ignorare o bloccare temporaneamente.
 
--Una maschera di segnali è un insieme di segnali che un processo ha deciso di ignorare o bloccare temporaneamente.
+- è anche possibile impostare una maschera di segnali con la funzione "sigprocmask()".
 
--È possibile impostare una maschera di segnali con la funzione "sigprocmask()".
-
--Per inviare un segnale a un processo, si utilizza la funzione "kill()".
-
--Per ricevere un segnale, si utilizza la funzione "sigwait()".
+- per inviare un segnale a un processo, si utilizza la funzione "kill()".
 
 
 ------------- MEMORIA CONDIVISA -------------
 
 
--Tecnica utilizzata nella programmazione concorrente per consentire a più processi di accedere alla stessa area di memoria condivisa.
+- è una tecnica utilizzata nella programmazione per consentire a più processi di accedere alla stessa area di memoria condivisa.
 
--Consente a più processi di condividere dati senza doverli copiare da un processo all'altro.
+- grazie a lei più processi possono condividere dati senza doverli copiare da un processo all'altro.
 
--Riduce i tempi di elaborazione e migliora le prestazioni del sistema.
+- i vantaggi sono che riduce i tempi di elaborazione e migliora le prestazioni del sistema.
 
--In C su Linux, la shared memory viene implementata attraverso un insieme di funzioni.
+- in C su Linux, la shared memory viene implementata attraverso un insieme di funzioni.
 
 -La funzione "shmget()" permette di creare un'area di memoria condivisa specificando la dimensione e le autorizzazioni di accesso.
 
@@ -58,9 +54,8 @@
 - FIFO sono simili alle pipe, ma utilizzano un file system virtuale e consentono ai processi di comunicare in modo asincrono.
 
 ---------- MAKEFILE -------------
-- Makefile è uno strumento utilizzato nella programmazione per automatizzare il processo di compilazione di un programma.
-- Makefile permette di specificare le dipendenze tra i file sorgente e di compilare solo i file che hanno subito modifiche, semplificando la gestione del codice e riducendo i tempi di compilazione.
-- La linea di compilazione "gcc -std=c89 -Wpedantic master.c -o master -pthread -lm cleanup" compila il file sorgente "master.c" con il compilatore C, attivando un elevato livello di avvisi, specificando la versione del linguaggio C, il nome dell'eseguibile da generare, attivando il supporto ai thread POSIX e linkando la libreria math.h se necessario.
+- Makefile è uno strumento utilizzato nella programmazione per semplificare e automatizzare la compilazione di un programma.
+- La linea di compilazione "gcc -std=c89 -Wpedantic master.c -o master -pthread -lm" compila il file sorgente "master.c" con il compilatore C, attivando un elevato livello di avvisi (wpedantic), specificando la versione del linguaggio C (1989), il nome dell'eseguibile da generare, attivando il supporto ai semafori POSIX e linkando la libreria math.h.
 
 --------- THREAD ------------
 - sono processi leggeri che condividono lo stesso spazio di indirizzamento (spazio di memoria virtuale assegnato al processo dal sistema operativo) del processo principale e possono eseguire in modo concorrente rispetto al processo principale o ad altri thread.
