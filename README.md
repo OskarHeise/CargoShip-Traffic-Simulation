@@ -1,4 +1,4 @@
-------------- I segnali -------------
+------------- SEGNALI -------------
 
 -Meccanismi utilizzati per notificare un processo dell'arrivo di un evento o di un'eccezione.
 
@@ -21,7 +21,7 @@
 -Per ricevere un segnale, si utilizza la funzione "sigwait()".
 
 
-------------- shared memory -------------
+------------- MEMORIA CONDIVISA -------------
 
 
 -Tecnica utilizzata nella programmazione concorrente per consentire a più processi di accedere alla stessa area di memoria condivisa.
