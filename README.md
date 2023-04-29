@@ -45,3 +45,24 @@
 -L'uso della shared memory può comportare rischi come il deadlock o la starvation.
 
 -La shared memory può essere utilizzata per migliorare le prestazioni dei sistemi concorrenti, ma richiede una progettazione attenta e una gestione corretta per evitare problemi di sicurezza e di stabilità del sistema.
+
+
+------ CODE DI MESSAGGI, PIPE, FIFO ----------
+
+- sono meccanismi di comunicazione utilizzati nella programmazione concorrente per permettere a più processi di comunicare tra di loro.
+
+- code di messaggio sono una forma di comunicazione asincrona e permettono ai processi di inviare e ricevere messaggi in modo indipendente e senza dover attendere una risposta immediata.
+
+- pipe sono una forma di comunicazione sincrona e collegano due processi tramite un unico canale di comunicazione, con una estremità di scrittura e una di lettura.
+
+- FIFO sono simili alle pipe, ma utilizzano un file system virtuale e consentono ai processi di comunicare in modo asincrono.
+
+---------- MAKEFILE -------------
+- Makefile è uno strumento utilizzato nella programmazione per automatizzare il processo di compilazione di un programma.
+- Makefile permette di specificare le dipendenze tra i file sorgente e di compilare solo i file che hanno subito modifiche, semplificando la gestione del codice e riducendo i tempi di compilazione.
+- La linea di compilazione "gcc -std=c89 -Wpedantic master.c -o master -pthread -lm cleanup" compila il file sorgente "master.c" con il compilatore C, attivando un elevato livello di avvisi, specificando la versione del linguaggio C, il nome dell'eseguibile da generare, attivando il supporto ai thread POSIX e linkando la libreria math.h se necessario.
+
+--------- THREAD ------------
+- sono processi leggeri che condividono lo stesso spazio di indirizzamento (spazio di memoria virtuale assegnato al processo dal sistema operativo) del processo principale e possono eseguire in modo concorrente rispetto al processo principale o ad altri thread.
+- thread sono utili in molte situazioni in cui è necessario gestire più attività contemporaneamente, senza dover creare processi separati e senza dover condividere dati tramite la memoria condivisa.
+- thread consentono di utilizzare le risorse del sistema in modo più efficiente, migliorando le prestazioni dell'applicazione e migliorando l'esperienza dell'utente finale.
