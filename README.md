@@ -28,19 +28,19 @@
 
 - in C su Linux, la shared memory viene implementata attraverso un insieme di funzioni.
 
--La funzione "shmget()" permette di creare un'area di memoria condivisa specificando la dimensione e le autorizzazioni di accesso.
+- La funzione "shmget()" permette di creare un'area di memoria condivisa specificando la dimensione e le autorizzazioni di accesso.
 
--La funzione "shmat()" consente di attaccare un processo all'area di memoria condivisa, restituendo un puntatore alla zona di memoria condivisa.
+- La funzione "shmat()" consente di attaccare un processo all'area di memoria condivisa, restituendo un puntatore alla zona di memoria condivisa.
 
--La funzione "shmdt()" consente di staccare un processo dall'area di memoria condivisa.
+- La funzione "shmdt()" consente di staccare un processo dall'area di memoria condivisa.
 
--L'accesso alla memoria condivisa deve essere sincronizzato tra i processi per evitare problemi di race condition o di inconsistenza dei dati.
+- L'accesso alla memoria condivisa deve essere sincronizzato tra i processi per evitare problemi di race condition o di inconsistenza dei dati.
 
--Si utilizzano spesso le tecniche di locking come i semafori o i mutex.
+- Si utilizzano spesso le tecniche di locking come i semafori o i mutex.
 
--L'uso della shared memory può comportare rischi come il deadlock o la starvation.
+- L'uso della shared memory può comportare rischi come il deadlock o la starvation.
 
--La shared memory può essere utilizzata per migliorare le prestazioni dei sistemi concorrenti, ma richiede una progettazione attenta e una gestione corretta per evitare problemi di sicurezza e di stabilità del sistema.
+- La shared memory può essere utilizzata per migliorare le prestazioni dei sistemi concorrenti, ma richiede una progettazione attenta e una gestione corretta per evitare problemi di sicurezza e di stabilità del sistema.
 
 
 ------ CODE DI MESSAGGI, PIPE, FIFO ----------
