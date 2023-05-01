@@ -1,5 +1,6 @@
 ------------- SEGNALI -------------
 
+
 - sono dei meccanismi utilizzati per notificare un processo dell'arrivo di un determinato evento o di un'eccezione.
 
 - i segnali possono essere inviati da un processo a un altro o da un sistema operativo a un processo e sono identificati da un numero intero.
@@ -45,6 +46,7 @@
 
 ------ CODE DI MESSAGGI, PIPE, FIFO ----------
 
+
 - sono meccanismi di comunicazione utilizzati nella programmazione concorrente per permettere a più processi di comunicare tra di loro.
 
 - code di messaggio sono una forma di comunicazione asincrona e permettono ai processi di inviare e ricevere messaggi in modo indipendente e senza dover attendere una risposta immediata.
@@ -54,10 +56,12 @@
 - FIFO sono simili alle pipe, ma utilizzano un file system virtuale e consentono ai processi di comunicare in modo asincrono.
 
 ---------- MAKEFILE -------------
+
 - Makefile è uno strumento utilizzato nella programmazione per semplificare e automatizzare la compilazione di un programma.
 - La linea di compilazione "gcc -std=c89 -Wpedantic master.c -o master -pthread -lm" compila il file sorgente "master.c" con il compilatore C, attivando un elevato livello di avvisi (wpedantic), specificando la versione del linguaggio C (1989), il nome dell'eseguibile da generare, attivando il supporto ai semafori POSIX e linkando la libreria math.h.
 
 --------- THREAD ------------
+
 - sono processi leggeri che condividono lo stesso spazio di indirizzamento (spazio di memoria virtuale assegnato al processo dal sistema operativo) del processo principale e possono eseguire in modo concorrente rispetto al processo principale o ad altri thread.
 - thread sono utili in molte situazioni in cui è necessario gestire più attività contemporaneamente, senza dover creare processi separati e senza dover condividere dati tramite la memoria condivisa.
 - thread consentono di utilizzare le risorse del sistema in modo più efficiente, migliorando le prestazioni dell'applicazione e migliorando l'esperienza dell'utente finale.
