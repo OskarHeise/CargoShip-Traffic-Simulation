@@ -1,4 +1,4 @@
-------------- SEGNALI -------------
+<span style="background-color:yellow">SEGNALI</span> ------------- SEGNALI -------------
 
 - sono dei meccanismi utilizzati per notificare un processo dell'arrivo di un determinato evento o di un'eccezione.
 
