@@ -24,7 +24,14 @@ int main() {
     pid_t *pid_figli; /*salvo i pid dei processi figli in un array*/
     int i,j;
     int messaggio_id, value;
-    char **args;
+    char *args_navi[] = {"./navi", NULL};
+    char *envp_navi[] = {NULL};
+    char *args_porti[] = {"./porti", NULL};
+    char *envp_porti[] = {NULL};
+    char *args_print[] = {"./print", NULL};
+    char *envp_print[] = {NULL};
+    char *args_meteo[] = {"./meteo", NULL};
+    char *envp_meteo[] = {NULL};
 
     /*cattura delle variabili*/
     FILE* config_file;
@@ -58,6 +65,7 @@ int main() {
         }
     }
 
+    /*controllo che i valori della variabili siano corretti*/
     if(so_porti == 0 || so_navi == 0 || so_days == 0 || so_merci == 0){
         perror("Errore, una delle variabili non permette il corretto funzionamento del programma!!");
         exit(EXIT_FAILURE);
@@ -76,7 +84,7 @@ int main() {
 
     /*inizializzazione della variabile necessaria per la chiusura di tutti i processi nave*/
     num_child_ready = 0;
-    pid_figli = realloc(pid_figli, so_navi * sizeof(pid_t));
+    pid_figli = malloc(so_navi * sizeof(pid_t));
     
     /*creazione semaforo e generazione merci*/
     semaforo_master = sem_open(semaforo_nome, O_CREAT, 0666, 1);
@@ -92,7 +100,9 @@ int main() {
     /*lascio qualche spazio per facilitare la lettura*/
     printf("\n\n\n");    
 
-
+    /*imposto l'handler*/
+    signal(SIGCHLD, handle_child);
+    signal(SIGUSR1, handle_child_ready);
 
 
 
@@ -104,7 +114,6 @@ int main() {
     /*creazione processi porto*/
     for(i = 0; i < so_porti; i += 256){  /*incremento di 256 ad ogni blocco*/
         for(j = i; j < i + 256 && j < so_porti; j++){
-            signal(SIGCHLD, handle_child);
             sem_wait(semaforo_master);
             switch (pid_processi = fork()){
                 case -1:
@@ -112,7 +121,7 @@ int main() {
                     exit(EXIT_FAILURE);
                     break;
                 case 0:
-                    execvp("./porti", args);
+                    execve("./porti", args_porti, envp_porti);
                     break;
                 default:
                     break;
@@ -131,7 +140,6 @@ int main() {
 
     for(i = 0; i < so_navi; i += 256){ /*incremento di 256 ad ogni blocco*/
         for(j = i; j < i + 256 && j < so_navi; j++){
-            signal(SIGUSR1, handle_child_ready);
             sem_wait(semaforo_master);
             switch (pid_figli[j] = fork()){
                 case -1:
@@ -139,7 +147,7 @@ int main() {
                     exit(EXIT_FAILURE);
                     break;
                 case 0:
-                    execvp("./navi", args);
+                    execve("./navi", args_navi, envp_navi);
                     break;
                 default:
                     break;
@@ -169,7 +177,7 @@ int main() {
             exit(EXIT_FAILURE);
             break;    
         case 0: 
-            execvp("./print", args);
+            execve("./print", args_print, envp_print);
             break;            
         default: 
             break;
@@ -182,7 +190,7 @@ int main() {
             exit(EXIT_FAILURE);
             break;    
         case 0: 
-            execvp("./meteo", args);
+            execve("./meteo", args_meteo, envp_meteo);
             break;            
         default: 
             break;

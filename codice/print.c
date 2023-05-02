@@ -21,7 +21,6 @@ void stampa_report_giornaliero(int giorni_simulazione, int so_merci, int so_port
         if(shared_memory_scadenze_statistiche->navi_nel_porto[i] == 1) navi_nel_porto++;
     }
 
-    /*LA MERCE CONSEGNATA VA SUDDIVISA IN TIPOLOGIA*/
     fp = fopen("report.txt", "a");
 
     fprintf(fp, "\n----------------------------------------\n");

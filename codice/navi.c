@@ -62,7 +62,7 @@ int main(){
     /*srand*/
     srand(getpid());
     
-    /*Invia al padre il segnale SIGUSR1 per indicare che il figlio è stato creato*/
+    /*imposto l'handler*/
     signal(SIGUSR1, handle_ready);
 
     /*aprertura semaforo generale*/
@@ -104,9 +104,7 @@ int main(){
     /*invio al processo padre il segnale SIGUSR1 per indicare che la nave è pronta. fermo l'esecuzione finchè non ricevo un segnale*/
     kill(getppid(), SIGUSR1);
     sem_post(semaforo_master); 
-    pause();  
-
-
+    pause();
 
 
 

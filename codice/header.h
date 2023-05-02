@@ -747,7 +747,6 @@ void tempo_sosta_porto(struct struct_nave nave){
     }
 }
 
-/*gestisce il segnale SIGUSR1 inviato dal padre ai figli per far partire la simulazione e ferma l'esecuzione finché tutti i figli non abbiano inviato il segnale SIGUSR1*/
 void handle_child(int sig){
     int status;
     pid_t child;
